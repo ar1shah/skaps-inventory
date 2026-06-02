@@ -13,7 +13,7 @@ export default function DeliveredPage() {
           <Truck className="h-5 w-5 text-blue-700" />
           Parts delivered / in transit
         </h1>
-        <p className="mt-1 text-sm text-slate-500">Tracking workflow for incoming orders.</p>
+        <p className="mt-1 text-sm text-slate-500">See what&apos;s arrived and what&apos;s still on the way.</p>
       </header>
 
       <Card className="mt-8">
@@ -24,12 +24,8 @@ export default function DeliveredPage() {
           <div>
             <p className="text-base font-semibold text-slate-900">Coming soon</p>
             <p className="mt-2 max-w-md text-sm text-slate-600">
-              The submissions table already stores <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">status</code>,
-              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">po_number</code>, and
-              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs">received_at</code> columns ready for this
-              workflow. Once the team is ready, we&apos;ll wire up the
-              ordered/in-transit/received flow here -- which will also flip
-              the dashboard widgets from placeholders to live counts.
+              This page is a planned feature. Soon you&apos;ll be able to view received purchase orders and
+              parts that are still in transit, without leaving the admin dashboard.
             </p>
           </div>
 

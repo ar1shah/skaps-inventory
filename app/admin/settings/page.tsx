@@ -74,18 +74,6 @@ export default async function SettingsPage() {
             <InviteForm />
           </CardContent>
         </Card>
-
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Ingest secret</CardTitle>
-            <p className="text-sm text-slate-500">
-              Stored as <code className="font-mono text-xs">INGEST_SECRET</code> on Vercel.
-              To rotate it, update the value in your Vercel project, redeploy,
-              then update the matching constant in the Google Apps Script. See
-              <code className="ml-1 font-mono text-xs">docs/apps-script/SETUP.md</code>.
-            </p>
-          </CardHeader>
-        </Card>
       </div>
     </div>
   );
