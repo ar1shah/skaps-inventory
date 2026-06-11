@@ -58,9 +58,12 @@ const COLUMN_HINTS = {
   ],
 
   line: [
+    // "select where the part was used" is the used-form's production-line column.
+    // "select where the part(s) would be installed" is the request-form equivalent.
+    // "select where the part was removed" is intentionally excluded -- its answers
+    // are storage locations (SP-1, SP-2, SG, AR, TR …), not production lines.
     "select where the part was used",
     "select where the part(s) would be installed",
-    "select where the part was removed",
   ],
   machineArea: ["select area of machine", "is there a specific machine area"],
   pmType: ["select pm type"],
@@ -71,25 +74,29 @@ const COLUMN_HINTS = {
 type FieldKey = keyof typeof COLUMN_HINTS;
 
 /**
- * Walk through the headers once and remember the column index of each
- * field we care about. We do this per row rather than caching globally
- * so the ingest endpoint stays stateless.
+ * Walk through the headers and collect ALL column indices that match each
+ * field, ordered by hint priority (the order of entries in COLUMN_HINTS)
+ * so that when multiple columns match the same field the one whose hint
+ * appears first in the array is tried first.  This matters because the
+ * sheet has one column per form-type for many questions, and only one of
+ * them is populated on any given row.
  */
-function buildIndexMap(headers: unknown[]): Partial<Record<FieldKey, number>> {
+function buildIndexMap(headers: unknown[]): Partial<Record<FieldKey, number[]>> {
   const canonicalized = headers.map(canonicalHeader);
-  const indexMap: Partial<Record<FieldKey, number>> = {};
+  const indexMap: Partial<Record<FieldKey, number[]>> = {};
 
   for (const field of Object.keys(COLUMN_HINTS) as FieldKey[]) {
-    const hints = COLUMN_HINTS[field];
-    for (let i = 0; i < canonicalized.length; i++) {
-      const h = canonicalized[i];
-      if (!h) continue;
-      if (hints.some((hint) => h.includes(hint))) {
-        // Only take the first non-empty hit per field, but keep looking
-        // for "skapsNumber" because there are two SKAPS-number columns
-        // and the second one tends to be populated when the first isn't.
-        if (indexMap[field] === undefined) {
-          indexMap[field] = i;
+    const hints = COLUMN_HINTS[field] as readonly string[];
+    // Outer loop: hints in priority order so high-priority columns are
+    // stored first in the index list even when they appear later in the sheet.
+    for (const hint of hints) {
+      for (let i = 0; i < canonicalized.length; i++) {
+        const h = canonicalized[i];
+        if (!h) continue;
+        if (h.includes(hint)) {
+          if (!indexMap[field]) indexMap[field] = [];
+          // Avoid duplicates (a column could theoretically match two hints).
+          if (!indexMap[field]!.includes(i)) indexMap[field]!.push(i);
         }
       }
     }
@@ -97,15 +104,25 @@ function buildIndexMap(headers: unknown[]): Partial<Record<FieldKey, number>> {
   return indexMap;
 }
 
-/** Given the headers + values arrays, return cell value for a field. */
+/**
+ * Return the first non-empty cell value from all columns that matched
+ * this field.  Falls back to the value at the first index if every
+ * matching column is blank (consistent with previous behaviour).
+ */
 function pickValue(
-  indexMap: Partial<Record<FieldKey, number>>,
+  indexMap: Partial<Record<FieldKey, number[]>>,
   field: FieldKey,
   values: unknown[],
 ): unknown {
-  const idx = indexMap[field];
-  if (idx === undefined) return null;
-  return values[idx];
+  const indices = indexMap[field];
+  if (!indices || indices.length === 0) return null;
+  for (const idx of indices) {
+    const v = values[idx];
+    if (v !== null && v !== undefined && (typeof v !== "string" || v.trim() !== "")) {
+      return v;
+    }
+  }
+  return values[indices[0]] ?? null;
 }
 
 /**
@@ -113,7 +130,7 @@ function pickValue(
  * description column. We fall back through both so we always end up with
  * a non-null value if either was filled in.
  */
-function pickFirstNonEmpty(indexMap: Partial<Record<FieldKey, number>>, fields: FieldKey[], values: unknown[]): string | null {
+function pickFirstNonEmpty(indexMap: Partial<Record<FieldKey, number[]>>, fields: FieldKey[], values: unknown[]): string | null {
   for (const field of fields) {
     const v = cleanString(pickValue(indexMap, field, values));
     if (v) return v;
