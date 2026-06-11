@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { getSiteUrl } from "@/lib/site-url";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
 export interface ActionState {
@@ -77,7 +78,9 @@ export async function inviteAdmin(
   // We need the service role to send invites. The signed-in user is
   // already an admin (middleware gate), so this is safe.
   const service = createServiceClient();
+  const redirectTo = `${getSiteUrl()}/auth/callback?next=/admin/settings`;
   const { error } = await service.auth.admin.inviteUserByEmail(parsed.data.email, {
+    redirectTo,
     data: {
       first_name: parsed.data.first_name,
       last_name: parsed.data.last_name,
