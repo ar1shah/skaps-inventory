@@ -9,19 +9,6 @@
  * To install: see SETUP.md in the same folder.
  */
 
-// ---- Configuration ---------------------------------------------------------
-// Replace these two values with your real endpoint and the INGEST_SECRET
-// you set on Vercel. The secret should be a long random string that
-// nobody outside this script and Vercel knows.
-var ENDPOINT = 'https://your-vercel-deployment.vercel.app/api/ingest';
-var SHARED_SECRET = 'paste-your-INGEST_SECRET-here';
-
-// Set to true while testing -- writes each payload to the Apps Script
-// "Executions" log so you can confirm the right cells are being captured.
-var DEBUG = false;
-// ----------------------------------------------------------------------------
-
-
 /**
  * Called on every form submission. The `e` event has the cell range that
  * was just appended; we grab the entire row and the header row and ship
