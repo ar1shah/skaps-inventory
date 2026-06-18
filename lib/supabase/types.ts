@@ -88,6 +88,63 @@ export type Database = {
         };
         Relationships: [];
       };
+      parts_in_repair: {
+        Row: {
+          created_at: string;
+          expected_return_at: string | null;
+          id: string;
+          line: string | null;
+          machine_area: string | null;
+          notes: string | null;
+          part_name: string;
+          po_reference: string | null;
+          quantity: number;
+          repair_reason: string | null;
+          repair_vendor: string | null;
+          returned_at: string | null;
+          sent_at: string;
+          skaps_number: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          expected_return_at?: string | null;
+          id?: string;
+          line?: string | null;
+          machine_area?: string | null;
+          notes?: string | null;
+          part_name: string;
+          po_reference?: string | null;
+          quantity?: number;
+          repair_reason?: string | null;
+          repair_vendor?: string | null;
+          returned_at?: string | null;
+          sent_at?: string;
+          skaps_number?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          expected_return_at?: string | null;
+          id?: string;
+          line?: string | null;
+          machine_area?: string | null;
+          notes?: string | null;
+          part_name?: string;
+          po_reference?: string | null;
+          quantity?: number;
+          repair_reason?: string | null;
+          repair_vendor?: string | null;
+          returned_at?: string | null;
+          sent_at?: string;
+          skaps_number?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           created_at: string;
@@ -236,3 +293,7 @@ export type Notification = Database["public"]["Tables"]["notifications"]["Row"];
 export type NotificationInsert = Database["public"]["Tables"]["notifications"]["Insert"];
 
 export type PublicInventoryRow = Database["public"]["Views"]["public_inventory"]["Row"];
+
+export type PartInRepair = Database["public"]["Tables"]["parts_in_repair"]["Row"];
+export type PartInRepairInsert = Database["public"]["Tables"]["parts_in_repair"]["Insert"];
+export type PartInRepairUpdate = Database["public"]["Tables"]["parts_in_repair"]["Update"];

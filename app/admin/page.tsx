@@ -2,6 +2,7 @@ import { Truck, PackageCheck } from "lucide-react";
 import { ComingSoonWidget } from "@/components/dashboard/ComingSoonWidget";
 import { ConsumedTodayWidget } from "@/components/dashboard/ConsumedTodayWidget";
 import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
+import { PartsInRepairWidget } from "@/components/dashboard/PartsInRepairWidget";
 import { QuickFormLinks } from "@/components/dashboard/QuickFormLinks";
 import { WeeklyOverviewChart } from "@/components/dashboard/WeeklyOverviewChart";
 import { WelcomeHeader } from "@/components/dashboard/WelcomeHeader";
@@ -18,6 +19,7 @@ export default function AdminDashboardPage() {
         <ConsumedTodayWidget />
         <YesterdayReportWidget />
         <NotificationsPanel />
+        <PartsInRepairWidget />
         <ComingSoonWidget
           title="Parts delivered"
           description="Received POs"

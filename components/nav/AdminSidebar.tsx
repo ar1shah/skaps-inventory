@@ -12,6 +12,7 @@ import {
   LogOut,
   Settings,
   Truck,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/login/actions";
@@ -37,6 +38,7 @@ const sections: { label: string; items: NavItem[] }[] = [
       { href: "/admin/used", label: "Parts used", icon: ClipboardCheck },
       { href: "/admin/requests", label: "Parts requests", icon: ClipboardList },
       { href: "/admin/inventory", label: "Inventory", icon: BoxIcon },
+      { href: "/admin/repair", label: "Parts in repair", icon: Wrench },
     ],
   },
   {
