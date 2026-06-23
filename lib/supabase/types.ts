@@ -8,281 +8,376 @@ export type Json =
   | boolean
   | null
   | { [key: string]: Json | undefined }
-  | Json[];
+  | Json[]
 
 export type Database = {
   __InternalSupabase: {
-    PostgrestVersion: "14.5";
-  };
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       notifications: {
         Row: {
-          body: string | null;
-          created_at: string;
-          id: string;
-          link: string | null;
-          read_at: string | null;
-          title: string;
-          type: string;
-        };
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          read_at: string | null
+          title: string
+          type: string
+        }
         Insert: {
-          body?: string | null;
-          created_at?: string;
-          id?: string;
-          link?: string | null;
-          read_at?: string | null;
-          title: string;
-          type: string;
-        };
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          type: string
+        }
         Update: {
-          body?: string | null;
-          created_at?: string;
-          id?: string;
-          link?: string | null;
-          read_at?: string | null;
-          title?: string;
-          type?: string;
-        };
-        Relationships: [];
-      };
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      part_variants: {
+        Row: {
+          created_at: string
+          external_row_id: string | null
+          id: string
+          line_no: string | null
+          location: string | null
+          location_on_machine: string | null
+          lwhsdesc: string | null
+          part_id: string
+          sort_order: number
+          source_sheet: string | null
+          storage_location: string | null
+          updated_at: string
+          zone: string | null
+        }
+        Insert: {
+          created_at?: string
+          external_row_id?: string | null
+          id?: string
+          line_no?: string | null
+          location?: string | null
+          location_on_machine?: string | null
+          lwhsdesc?: string | null
+          part_id: string
+          sort_order?: number
+          source_sheet?: string | null
+          storage_location?: string | null
+          updated_at?: string
+          zone?: string | null
+        }
+        Update: {
+          created_at?: string
+          external_row_id?: string | null
+          id?: string
+          line_no?: string | null
+          location?: string | null
+          location_on_machine?: string | null
+          lwhsdesc?: string | null
+          part_id?: string
+          sort_order?: number
+          source_sheet?: string | null
+          storage_location?: string | null
+          updated_at?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part_variants_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "part_variants_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "public_inventory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parts: {
         Row: {
-          category: string | null;
-          created_at: string;
-          current_quantity: number;
-          id: string;
-          location: string | null;
-          name: string;
-          notes: string | null;
-          reorder_threshold: number | null;
-          skaps_number: string;
-          unit: string;
-          updated_at: string;
-        };
+          belt_type: string | null
+          category: string | null
+          created_at: string
+          current_quantity: number
+          description: string | null
+          id: string
+          image_url: string | null
+          line_no: string | null
+          location: string | null
+          location_on_machine: string | null
+          lwhsdesc: string | null
+          name: string
+          notes: string | null
+          reorder_threshold: number | null
+          size: string | null
+          skaps_number: string
+          storage_location: string | null
+          sub_category: string | null
+          unit: string
+          updated_at: string
+          vendor_names: string | null
+          zone: string | null
+        }
         Insert: {
-          category?: string | null;
-          created_at?: string;
-          current_quantity?: number;
-          id?: string;
-          location?: string | null;
-          name: string;
-          notes?: string | null;
-          reorder_threshold?: number | null;
-          skaps_number: string;
-          unit?: string;
-          updated_at?: string;
-        };
+          belt_type?: string | null
+          category?: string | null
+          created_at?: string
+          current_quantity?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          line_no?: string | null
+          location?: string | null
+          location_on_machine?: string | null
+          lwhsdesc?: string | null
+          name: string
+          notes?: string | null
+          reorder_threshold?: number | null
+          size?: string | null
+          skaps_number: string
+          storage_location?: string | null
+          sub_category?: string | null
+          unit?: string
+          updated_at?: string
+          vendor_names?: string | null
+          zone?: string | null
+        }
         Update: {
-          category?: string | null;
-          created_at?: string;
-          current_quantity?: number;
-          id?: string;
-          location?: string | null;
-          name?: string;
-          notes?: string | null;
-          reorder_threshold?: number | null;
-          skaps_number?: string;
-          unit?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          belt_type?: string | null
+          category?: string | null
+          created_at?: string
+          current_quantity?: number
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          line_no?: string | null
+          location?: string | null
+          location_on_machine?: string | null
+          lwhsdesc?: string | null
+          name?: string
+          notes?: string | null
+          reorder_threshold?: number | null
+          size?: string | null
+          skaps_number?: string
+          storage_location?: string | null
+          sub_category?: string | null
+          unit?: string
+          updated_at?: string
+          vendor_names?: string | null
+          zone?: string | null
+        }
+        Relationships: []
+      }
       parts_in_repair: {
         Row: {
-          created_at: string;
-          expected_return_at: string | null;
-          id: string;
-          line: string | null;
-          machine_area: string | null;
-          notes: string | null;
-          part_name: string;
-          po_reference: string | null;
-          quantity: number;
-          repair_reason: string | null;
-          repair_vendor: string | null;
-          returned_at: string | null;
-          sent_at: string;
-          skaps_number: string | null;
-          status: string;
-          updated_at: string;
-        };
+          created_at: string
+          expected_return_at: string | null
+          id: string
+          line: string | null
+          machine_area: string | null
+          notes: string | null
+          part_name: string
+          po_reference: string | null
+          quantity: number
+          repair_reason: string | null
+          repair_vendor: string | null
+          returned_at: string | null
+          sent_at: string
+          skaps_number: string | null
+          status: string
+          updated_at: string
+        }
         Insert: {
-          created_at?: string;
-          expected_return_at?: string | null;
-          id?: string;
-          line?: string | null;
-          machine_area?: string | null;
-          notes?: string | null;
-          part_name: string;
-          po_reference?: string | null;
-          quantity?: number;
-          repair_reason?: string | null;
-          repair_vendor?: string | null;
-          returned_at?: string | null;
-          sent_at?: string;
-          skaps_number?: string | null;
-          status?: string;
-          updated_at?: string;
-        };
+          created_at?: string
+          expected_return_at?: string | null
+          id?: string
+          line?: string | null
+          machine_area?: string | null
+          notes?: string | null
+          part_name: string
+          po_reference?: string | null
+          quantity?: number
+          repair_reason?: string | null
+          repair_vendor?: string | null
+          returned_at?: string | null
+          sent_at?: string
+          skaps_number?: string | null
+          status?: string
+          updated_at?: string
+        }
         Update: {
-          created_at?: string;
-          expected_return_at?: string | null;
-          id?: string;
-          line?: string | null;
-          machine_area?: string | null;
-          notes?: string | null;
-          part_name?: string;
-          po_reference?: string | null;
-          quantity?: number;
-          repair_reason?: string | null;
-          repair_vendor?: string | null;
-          returned_at?: string | null;
-          sent_at?: string;
-          skaps_number?: string | null;
-          status?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          expected_return_at?: string | null
+          id?: string
+          line?: string | null
+          machine_area?: string | null
+          notes?: string | null
+          part_name?: string
+          po_reference?: string | null
+          quantity?: number
+          repair_reason?: string | null
+          repair_vendor?: string | null
+          returned_at?: string | null
+          sent_at?: string
+          skaps_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
-          created_at: string;
-          first_name: string | null;
-          id: string;
-          last_name: string | null;
-        };
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+        }
         Insert: {
-          created_at?: string;
-          first_name?: string | null;
-          id: string;
-          last_name?: string | null;
-        };
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+        }
         Update: {
-          created_at?: string;
-          first_name?: string | null;
-          id?: string;
-          last_name?: string | null;
-        };
-        Relationships: [];
-      };
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+        }
+        Relationships: []
+      }
       submissions: {
         Row: {
-          employee_name: string | null;
-          external_row_id: string | null;
-          form_type: string;
-          id: string;
-          line: string | null;
-          machine_area: string | null;
-          notes: string | null;
-          part_description: string | null;
-          pm_type: string | null;
-          po_number: string | null;
-          price: number | null;
-          quantity: number | null;
-          raw: Json;
-          received_at: string | null;
-          skaps_number: string | null;
-          status: string;
-          submitted_at: string;
-          urgency: string | null;
-        };
+          employee_name: string | null
+          external_row_id: string | null
+          form_type: string
+          id: string
+          line: string | null
+          machine_area: string | null
+          notes: string | null
+          part_description: string | null
+          pm_type: string | null
+          po_number: string | null
+          price: number | null
+          quantity: number | null
+          raw: Json
+          received_at: string | null
+          skaps_number: string | null
+          status: string
+          submitted_at: string
+          urgency: string | null
+        }
         Insert: {
-          employee_name?: string | null;
-          external_row_id?: string | null;
-          form_type: string;
-          id?: string;
-          line?: string | null;
-          machine_area?: string | null;
-          notes?: string | null;
-          part_description?: string | null;
-          pm_type?: string | null;
-          po_number?: string | null;
-          price?: number | null;
-          quantity?: number | null;
-          raw: Json;
-          received_at?: string | null;
-          skaps_number?: string | null;
-          status?: string;
-          submitted_at: string;
-          urgency?: string | null;
-        };
+          employee_name?: string | null
+          external_row_id?: string | null
+          form_type: string
+          id?: string
+          line?: string | null
+          machine_area?: string | null
+          notes?: string | null
+          part_description?: string | null
+          pm_type?: string | null
+          po_number?: string | null
+          price?: number | null
+          quantity?: number | null
+          raw: Json
+          received_at?: string | null
+          skaps_number?: string | null
+          status?: string
+          submitted_at: string
+          urgency?: string | null
+        }
         Update: {
-          employee_name?: string | null;
-          external_row_id?: string | null;
-          form_type?: string;
-          id?: string;
-          line?: string | null;
-          machine_area?: string | null;
-          notes?: string | null;
-          part_description?: string | null;
-          pm_type?: string | null;
-          po_number?: string | null;
-          price?: number | null;
-          quantity?: number | null;
-          raw?: Json;
-          received_at?: string | null;
-          skaps_number?: string | null;
-          status?: string;
-          submitted_at?: string;
-          urgency?: string | null;
-        };
-        Relationships: [];
-      };
-    };
+          employee_name?: string | null
+          external_row_id?: string | null
+          form_type?: string
+          id?: string
+          line?: string | null
+          machine_area?: string | null
+          notes?: string | null
+          part_description?: string | null
+          pm_type?: string | null
+          po_number?: string | null
+          price?: number | null
+          quantity?: number | null
+          raw?: Json
+          received_at?: string | null
+          skaps_number?: string | null
+          status?: string
+          submitted_at?: string
+          urgency?: string | null
+        }
+        Relationships: []
+      }
+    }
     Views: {
       public_inventory: {
         Row: {
-          category: string | null;
-          location: string | null;
-          name: string | null;
-          quantity_on_hand: number | null;
-          reorder_threshold: number | null;
-          skaps_number: string | null;
-          unit: string | null;
-          updated_at: string | null;
-          used_last_30d: number | null;
-        };
-        Insert: {
-          category?: string | null;
-          location?: string | null;
-          name?: string | null;
-          quantity_on_hand?: never;
-          reorder_threshold?: number | null;
-          skaps_number?: string | null;
-          unit?: string | null;
-          updated_at?: string | null;
-          used_last_30d?: never;
-        };
-        Update: {
-          category?: string | null;
-          location?: string | null;
-          name?: string | null;
-          quantity_on_hand?: never;
-          reorder_threshold?: number | null;
-          skaps_number?: string | null;
-          unit?: string | null;
-          updated_at?: string | null;
-          used_last_30d?: never;
-        };
-        Relationships: [];
-      };
-    };
+          belt_type: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          image_url: string | null
+          line_no: string | null
+          location: string | null
+          location_on_machine: string | null
+          lwhsdesc: string | null
+          name: string | null
+          notes: string | null
+          quantity_on_hand: number | null
+          reorder_threshold: number | null
+          size: string | null
+          skaps_number: string | null
+          storage_location: string | null
+          sub_category: string | null
+          unit: string | null
+          updated_at: string | null
+          used_last_30d: number | null
+          variant_count: number | null
+          vendor_names: string | null
+          zone: string | null
+        }
+        Relationships: []
+      }
+    }
     Functions: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Enums: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Part = Database["public"]["Tables"]["parts"]["Row"];
 export type PartInsert = Database["public"]["Tables"]["parts"]["Insert"];
 export type PartUpdate = Database["public"]["Tables"]["parts"]["Update"];
+
+export type PartVariant = Database["public"]["Tables"]["part_variants"]["Row"];
+export type PartVariantInsert = Database["public"]["Tables"]["part_variants"]["Insert"];
 
 export type Submission = Database["public"]["Tables"]["submissions"]["Row"];
 export type SubmissionInsert = Database["public"]["Tables"]["submissions"]["Insert"];
@@ -297,3 +392,6 @@ export type PublicInventoryRow = Database["public"]["Views"]["public_inventory"]
 export type PartInRepair = Database["public"]["Tables"]["parts_in_repair"]["Row"];
 export type PartInRepairInsert = Database["public"]["Tables"]["parts_in_repair"]["Insert"];
 export type PartInRepairUpdate = Database["public"]["Tables"]["parts_in_repair"]["Update"];
+
+/** A public_inventory row with its pre-loaded warehouse variants. */
+export type InventoryPart = PublicInventoryRow & { variants: PartVariant[] };

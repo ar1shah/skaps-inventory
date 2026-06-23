@@ -10,7 +10,6 @@ import type { PartFormState } from "@/app/admin/inventory/actions";
 import type { Part } from "@/lib/supabase/types";
 
 interface Props {
-  /** Bound server action -- either createPart or updatePart.bind(null, id). */
   action: (state: PartFormState, formData: FormData) => Promise<PartFormState>;
   initial?: Part | null;
   submitLabel: string;
@@ -20,72 +19,166 @@ interface Props {
 export function PartForm({ action, initial, submitLabel, onSuccess }: Props) {
   const [state, formAction] = useActionState(action, {} as PartFormState);
 
-  // After a successful submit, call onSuccess (e.g. close the dialog).
   if (state.ok && onSuccess) {
     queueMicrotask(onSuccess);
   }
 
   return (
-    <form action={formAction} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <Field
-          label="SKAPS number"
-          name="skaps_number"
-          defaultValue={initial?.skaps_number}
-          error={state.fieldErrors?.skaps_number}
-          required
-        />
-        <Field
-          label="Name"
-          name="name"
-          defaultValue={initial?.name}
-          error={state.fieldErrors?.name}
-          required
-        />
-        <Field
-          label="Category"
-          name="category"
-          defaultValue={initial?.category ?? ""}
-          error={state.fieldErrors?.category}
-          placeholder="e.g. Bearing"
-        />
-        <Field
-          label="Location"
-          name="location"
-          defaultValue={initial?.location ?? ""}
-          error={state.fieldErrors?.location}
-          placeholder="e.g. Shelf A3"
-        />
-        <Field
-          label="Unit"
-          name="unit"
-          defaultValue={initial?.unit ?? "each"}
-          error={state.fieldErrors?.unit}
-          placeholder="each, ft, case"
-        />
-        <Field
-          label="In stock"
-          name="current_quantity"
-          type="number"
-          step="0.01"
-          min="0"
-          defaultValue={initial?.current_quantity ?? 0}
-          error={state.fieldErrors?.current_quantity}
-          required
-        />
-        <Field
-          label="Reorder threshold"
-          name="reorder_threshold"
-          type="number"
-          step="0.01"
-          min="0"
-          defaultValue={initial?.reorder_threshold ?? ""}
-          error={state.fieldErrors?.reorder_threshold}
-          placeholder="Optional"
-          className="col-span-2 sm:col-span-1"
-        />
-      </div>
+    <form action={formAction} className="space-y-6">
+      {/* Core identification */}
+      <Section label="Identification">
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="SKAPS Number"
+            name="skaps_number"
+            defaultValue={initial?.skaps_number}
+            error={state.fieldErrors?.skaps_number}
+            required
+          />
+          <Field
+            label="Name"
+            name="name"
+            defaultValue={initial?.name}
+            error={state.fieldErrors?.name}
+            required
+          />
+          <Field
+            label="SKAPS Name (internal)"
+            name="lwhsdesc"
+            defaultValue={initial?.lwhsdesc ?? ""}
+            error={state.fieldErrors?.lwhsdesc}
+            placeholder="e.g. Lubrication Tube 03"
+            className="col-span-2"
+          />
+          <Field
+            label="Description"
+            name="description"
+            defaultValue={initial?.description ?? ""}
+            error={state.fieldErrors?.description}
+            placeholder="Full part description"
+            className="col-span-2"
+          />
+        </div>
+      </Section>
 
+      {/* Classification */}
+      <Section label="Classification">
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Main Category"
+            name="category"
+            defaultValue={initial?.category ?? ""}
+            error={state.fieldErrors?.category}
+            placeholder="e.g. MOTORS"
+          />
+          <Field
+            label="Sub-Category"
+            name="sub_category"
+            defaultValue={initial?.sub_category ?? ""}
+            error={state.fieldErrors?.sub_category}
+            placeholder="e.g. AC Motor"
+          />
+          <Field
+            label="Size"
+            name="size"
+            defaultValue={initial?.size ?? ""}
+            error={state.fieldErrors?.size}
+            placeholder="e.g. 25mm"
+          />
+          <Field
+            label="Belt Type"
+            name="belt_type"
+            defaultValue={initial?.belt_type ?? ""}
+            error={state.fieldErrors?.belt_type}
+            placeholder="e.g. V-Belt"
+          />
+          <Field
+            label="Vendor Names"
+            name="vendor_names"
+            defaultValue={initial?.vendor_names ?? ""}
+            error={state.fieldErrors?.vendor_names}
+            placeholder="e.g. DILO, Inc."
+            className="col-span-2"
+          />
+        </div>
+      </Section>
+
+      {/* Location */}
+      <Section label="Location">
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Location on Machine"
+            name="location_on_machine"
+            defaultValue={initial?.location_on_machine ?? ""}
+            error={state.fieldErrors?.location_on_machine}
+            placeholder="e.g. Tacker / Looms"
+          />
+          <Field
+            label="Line No."
+            name="line_no"
+            defaultValue={initial?.line_no ?? ""}
+            error={state.fieldErrors?.line_no}
+            placeholder="e.g. Line 7"
+          />
+          <Field
+            label="Zone"
+            name="zone"
+            defaultValue={initial?.zone ?? ""}
+            error={state.fieldErrors?.zone}
+            placeholder="e.g. Athens"
+          />
+          <Field
+            label="Location"
+            name="location"
+            defaultValue={initial?.location ?? ""}
+            error={state.fieldErrors?.location}
+            placeholder="e.g. Athens Shop"
+          />
+          <Field
+            label="Storage Location"
+            name="storage_location"
+            defaultValue={initial?.storage_location ?? ""}
+            error={state.fieldErrors?.storage_location}
+            placeholder="e.g. Cabinet CB-11 / Green Bins"
+            className="col-span-2"
+          />
+        </div>
+      </Section>
+
+      {/* Stock */}
+      <Section label="Stock">
+        <div className="grid grid-cols-2 gap-3">
+          <Field
+            label="Unit"
+            name="unit"
+            defaultValue={initial?.unit ?? "each"}
+            error={state.fieldErrors?.unit}
+            placeholder="each, ft, case"
+          />
+          <Field
+            label="In Stock"
+            name="current_quantity"
+            type="number"
+            step="0.01"
+            min="0"
+            defaultValue={initial?.current_quantity ?? 0}
+            error={state.fieldErrors?.current_quantity}
+            required
+          />
+          <Field
+            label="Reorder Threshold"
+            name="reorder_threshold"
+            type="number"
+            step="0.01"
+            min="0"
+            defaultValue={initial?.reorder_threshold ?? ""}
+            error={state.fieldErrors?.reorder_threshold}
+            placeholder="Optional"
+          />
+        </div>
+      </Section>
+
+      {/* Notes */}
       <div>
         <Label htmlFor="notes">Notes</Label>
         <textarea
@@ -108,6 +201,17 @@ export function PartForm({ action, initial, submitLabel, onSuccess }: Props) {
 
       <SubmitButton label={submitLabel} />
     </form>
+  );
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </h3>
+      {children}
+    </div>
   );
 }
 

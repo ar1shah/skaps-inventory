@@ -17,11 +17,20 @@ interface Props {
 
 export function SubmissionsTable({ submissions, formType }: Props) {
   const [query, setQuery] = useState("");
+  const [showNeedsReview, setShowNeedsReview] = useState(false);
+
+  const needsReviewCount = useMemo(
+    () => submissions.filter((s) => s.status === "needs_review").length,
+    [submissions],
+  );
 
   const filtered = useMemo(() => {
+    let list = showNeedsReview
+      ? submissions.filter((s) => s.status === "needs_review")
+      : submissions;
     const q = query.trim().toLowerCase();
-    if (!q) return submissions;
-    return submissions.filter((row) => {
+    if (!q) return list;
+    return list.filter((row) => {
       const blob = [
         row.skaps_number,
         row.part_description,
@@ -37,7 +46,7 @@ export function SubmissionsTable({ submissions, formType }: Props) {
         .toLowerCase();
       return blob.includes(q);
     });
-  }, [submissions, query]);
+  }, [submissions, query, showNeedsReview]);
 
   function downloadCsv() {
     const columns: Array<{ key: keyof Submission; label: string }> =
@@ -94,10 +103,25 @@ export function SubmissionsTable({ submissions, formType }: Props) {
             className="pl-9"
           />
         </div>
-        <Button variant="outline" size="sm" onClick={downloadCsv}>
-          <Download className="h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          {formType === "used" && needsReviewCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowNeedsReview((v) => !v)}
+              className={
+                showNeedsReview
+                  ? "rounded-full bg-amber-500 px-3 py-1 text-xs font-medium text-white"
+                  : "rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+              }
+            >
+              Needs review ({needsReviewCount})
+            </button>
+          )}
+          <Button variant="outline" size="sm" onClick={downloadCsv}>
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       <p className="mt-3 text-xs text-slate-500">
@@ -132,13 +156,29 @@ export function SubmissionsTable({ submissions, formType }: Props) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/60">
+                  <tr
+                    key={row.id}
+                    className={
+                      row.status === "needs_review"
+                        ? "bg-amber-50/60 hover:bg-amber-50"
+                        : "hover:bg-slate-50/60"
+                    }
+                  >
                     <td className="px-4 py-3 text-xs text-slate-500">
                       {formatDateTime(row.submitted_at)}
                     </td>
                     <td className="px-4 py-3 text-slate-700">{row.employee_name ?? "-"}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-700">
-                      {row.skaps_number ?? "-"}
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-mono text-xs text-slate-700">
+                          {row.skaps_number ?? "-"}
+                        </span>
+                        {row.status === "needs_review" && (
+                          <Badge tone="warning" className="w-fit text-[10px]">
+                            Needs review
+                          </Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-900">
                       {row.part_description ?? "-"}

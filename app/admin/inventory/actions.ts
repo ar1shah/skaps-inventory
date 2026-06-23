@@ -4,11 +4,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
-/**
- * The Zod schema mirrors the constraints in the database. Optional fields
- * are normalized to `null` (or omitted) so the resulting object lines up
- * with the SDK's Insert/Update shape.
- */
 const optionalString = (max: number) =>
   z
     .string()
@@ -37,14 +32,20 @@ const optionalNumber = z
   .optional();
 
 const PartInput = z.object({
-  skaps_number: z
-    .string()
-    .trim()
-    .min(1, "SKAPS number is required")
-    .max(80, "SKAPS number is too long"),
+  skaps_number: z.string().trim().min(1, "SKAPS number is required").max(80),
   name: z.string().trim().min(1, "Name is required").max(200),
+  description: optionalString(1000),
   category: optionalString(80),
-  location: optionalString(80),
+  sub_category: optionalString(80),
+  location: optionalString(200),
+  location_on_machine: optionalString(200),
+  line_no: optionalString(80),
+  zone: optionalString(80),
+  storage_location: optionalString(500),
+  lwhsdesc: optionalString(200),
+  size: optionalString(80),
+  belt_type: optionalString(80),
+  vendor_names: optionalString(200),
   unit: z
     .string()
     .trim()

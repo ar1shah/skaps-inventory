@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import {
   AlertTriangle,
+  ArrowDownCircle,
   Bell,
   CircleAlert,
   CircleHelp,
@@ -24,13 +25,15 @@ const iconByType: Record<string, React.ReactNode> = {
   urgent_request: <CircleAlert className="h-3.5 w-3.5" />,
   low_stock: <AlertTriangle className="h-3.5 w-3.5" />,
   unknown_skaps: <CircleHelp className="h-3.5 w-3.5" />,
+  stock_updated: <ArrowDownCircle className="h-3.5 w-3.5" />,
 };
 
-const toneByType: Record<string, "accent" | "warning" | "danger" | "neutral"> = {
+const toneByType: Record<string, "accent" | "warning" | "danger" | "neutral" | "success"> = {
   new_request: "accent",
   urgent_request: "danger",
   low_stock: "warning",
   unknown_skaps: "neutral",
+  stock_updated: "success",
 };
 
 export function NotificationsInbox({ notifications }: { notifications: Notification[] }) {

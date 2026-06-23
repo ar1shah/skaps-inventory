@@ -1,28 +1,61 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
-import type { Part } from "@/lib/supabase/types";
+import type { InventoryPart, Part, PartVariant, PublicInventoryRow } from "@/lib/supabase/types";
 import { AdminInventoryClient } from "./AdminInventoryClient";
 
 export const dynamic = "force-dynamic";
 
-async function loadParts(): Promise<Part[]> {
+async function loadParts(): Promise<{ parts: Part[]; inventoryParts: InventoryPart[] }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("parts")
-    .select("*")
-    .order("name", { ascending: true });
 
-  if (error) {
-    console.error("failed to load parts", error);
-    return [];
+  const [
+    { data: parts, error: partsErr },
+    { data: rows, error: rowsErr },
+    { data: variants, error: varErr },
+  ] = await Promise.all([
+    fetchAllRows<Part>((from, to) =>
+      supabase.from("parts").select("*").order("name", { ascending: true }).range(from, to),
+    ),
+    fetchAllRows<PublicInventoryRow>((from, to) =>
+      supabase
+        .from("public_inventory")
+        .select("*")
+        .order("name", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows<PartVariant>((from, to) =>
+      supabase
+        .from("part_variants")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .range(from, to),
+    ),
+  ]);
+
+  if (partsErr) console.error("failed to load parts", partsErr);
+  if (rowsErr) console.error("failed to load inventory rows", rowsErr);
+  if (varErr) console.error("failed to load variants", varErr);
+
+  const variantsByPartId = new Map<string, PartVariant[]>();
+  for (const v of variants ?? []) {
+    const list = variantsByPartId.get(v.part_id) ?? [];
+    list.push(v);
+    variantsByPartId.set(v.part_id, list);
   }
-  return data ?? [];
+
+  const inventoryParts: InventoryPart[] = (rows ?? []).map((row) => ({
+    ...row,
+    variants: row.id ? (variantsByPartId.get(row.id) ?? []) : [],
+  }));
+
+  return { parts: parts ?? [], inventoryParts };
 }
 
 export default async function AdminInventoryPage() {
-  const parts = await loadParts();
+  const { parts, inventoryParts } = await loadParts();
 
   return (
     <div>
@@ -45,7 +78,7 @@ export default async function AdminInventoryPage() {
       </div>
 
       <div className="mt-8">
-        <AdminInventoryClient parts={parts} />
+        <AdminInventoryClient parts={parts} inventoryParts={inventoryParts} />
       </div>
     </div>
   );
