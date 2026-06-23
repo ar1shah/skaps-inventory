@@ -79,6 +79,15 @@ export function isUrgent(urgency: string | null): boolean {
 }
 
 /**
+ * Canonical form for SKAPS# comparison: uppercase, strip separators
+ * (spaces, underscores, hyphens, etc.). "INSERT_164", "insert 164", and
+ * "INSERT 164" all become "INSERT164".
+ */
+export function normalizeSkapsNumber(s: string): string {
+  return s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+/**
  * Parses Google Forms' timestamp string. Apps Script sends ISO strings
  * but the export-to-sheet flow uses locale dates like "4/3/2026 11:42:45"
  * -- both should parse via the Date constructor.

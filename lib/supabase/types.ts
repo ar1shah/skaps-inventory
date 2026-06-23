@@ -358,7 +358,17 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      find_part_by_skaps_number: {
+        Args: {
+          submitted: string
+        }
+        Returns: {
+          skaps_number: string
+          name: string
+          current_quantity: number
+          reorder_threshold: number | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

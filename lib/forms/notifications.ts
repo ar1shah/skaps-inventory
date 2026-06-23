@@ -3,10 +3,10 @@
  * a submission is upserted.
  *
  * The submissions table trigger has already decremented stock (for exact
- * SKAPS# matches) by the time we get here.
+ * or normalized SKAPS# matches) by the time we get here.
  *
  * For "used" submissions:
- *   - Exact match → emit stock_updated notification
+ *   - Match found → emit stock_updated notification
  *   - No match    → flag submission as needs_review, emit unknown_skaps
  *                   notification with fuzzy-match suggestions if any
  */
@@ -14,41 +14,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database, NotificationInsert, Submission } from "@/lib/supabase/types";
 import { isUrgent } from "./normalize";
+import {
+  findFuzzySkapsMatches,
+  findPartBySkapsNumber,
+} from "@/lib/inventory/skaps-match";
 
 type Client = SupabaseClient<Database>;
-
-/** Normalize a SKAPS# for fuzzy comparison: uppercase, strip non-alphanum */
-function normalizeSkaps(s: string): string {
-  return s.toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
-
-/**
- * Find parts whose normalized skaps_number is similar to the submitted value.
- * Returns up to 3 candidates.
- */
-async function findFuzzyMatches(
-  client: Client,
-  submittedSkaps: string,
-): Promise<Array<{ skaps_number: string; name: string }>> {
-  const norm = normalizeSkaps(submittedSkaps);
-  if (norm.length < 2) return [];
-
-  // Fetch all parts (parts table is small enough; ~2k rows is fine)
-  const { data: allParts } = await client
-    .from("parts")
-    .select("skaps_number, name")
-    .limit(5000);
-
-  if (!allParts) return [];
-
-  return allParts
-    .filter((p) => {
-      if (!p.skaps_number) return false;
-      const pNorm = normalizeSkaps(p.skaps_number);
-      return pNorm.includes(norm) || norm.includes(pNorm);
-    })
-    .slice(0, 3);
-}
 
 export async function emitNotificationsForSubmission(
   client: Client,
@@ -79,15 +50,10 @@ export async function emitNotificationsForSubmission(
 
   // ── Parts Used ────────────────────────────────────────────────────────────
   if (submission.form_type === "used" && submission.skaps_number) {
-    const { data: part } = await client
-      .from("parts")
-      .select("skaps_number, name, current_quantity, reorder_threshold")
-      .eq("skaps_number", submission.skaps_number)
-      .maybeSingle();
+    const part = await findPartBySkapsNumber(client, submission.skaps_number);
 
     if (!part) {
-      // No exact match — flag for manual review and suggest fuzzy candidates
-      const fuzzy = await findFuzzyMatches(client, submission.skaps_number);
+      const fuzzy = await findFuzzySkapsMatches(client, submission.skaps_number);
       const suggestions =
         fuzzy.length > 0
           ? `\nPossible matches: ${fuzzy.map((f) => `${f.skaps_number} (${f.name})`).join(", ")}`
@@ -103,23 +69,25 @@ export async function emitNotificationsForSubmission(
         link: "/admin/used",
       });
 
-      // Mark the submission so it's highlighted in the admin used log
       await client
         .from("submissions")
         .update({ status: "needs_review" })
         .eq("id", submission.id);
     } else {
-      // Exact match — stock was already decremented by the DB trigger
+      const matchedNote =
+        submission.skaps_number !== part.skaps_number
+          ? ` Typed as "${submission.skaps_number}", matched to ${part.skaps_number}.`
+          : "";
+
       inserts.push({
         type: "stock_updated",
         title: `Stock updated: ${part.name} (${part.skaps_number})`,
         body:
-          `${submission.employee_name ?? "Someone"} used ${submission.quantity ?? "?"} unit(s). ` +
-          `New qty: ${Math.max(0, part.current_quantity)}.`,
+          `${submission.employee_name ?? "Someone"} used ${submission.quantity ?? "?"} unit(s).` +
+          `${matchedNote} New qty: ${Math.max(0, part.current_quantity)}.`,
         link: "/admin/inventory",
       });
 
-      // Also check for low stock after the deduction
       if (
         part.reorder_threshold !== null &&
         part.current_quantity <= part.reorder_threshold
@@ -135,7 +103,6 @@ export async function emitNotificationsForSubmission(
   }
 
   if (submission.form_type === "used" && !submission.skaps_number) {
-    // Used form submitted without any SKAPS# at all
     inserts.push({
       type: "unknown_skaps",
       title: "Parts used: no SKAPS # provided",
