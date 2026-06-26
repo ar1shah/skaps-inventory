@@ -35,11 +35,9 @@ export default async function LoginPage({ searchParams }: PageProps) {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-500">
-          Not an admin?{" "}
-          <Link href="/inventory" className="font-medium text-blue-700 hover:underline">
-            Browse the public inventory
+          <Link href="/" className="font-medium text-blue-700 hover:underline">
+            Back to home
           </Link>
-          .
         </p>
       </div>
     </div>

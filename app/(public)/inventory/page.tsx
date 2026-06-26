@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { InventoryTileGrid } from "@/components/inventory/InventoryTileGrid";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
@@ -6,7 +7,7 @@ import type { InventoryPart, PartVariant, PublicInventoryRow } from "@/lib/supab
 
 export const metadata: Metadata = {
   title: "Inventory",
-  description: "Browse the current SKAPS parts inventory.",
+  description: "SKAPS parts inventory (admin sign-in required).",
 };
 
 export const revalidate = 30;
@@ -48,6 +49,15 @@ async function loadInventory(): Promise<InventoryPart[]> {
 }
 
 export default async function InventoryPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login?next=/inventory");
+  }
+
   const parts = await loadInventory();
 
   return (

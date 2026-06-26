@@ -42,21 +42,21 @@ export default async function HomePage() {
             Parts inventory, kept honest.
           </h1>
           <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">
-            Browse what&apos;s on the shelf, see what&apos;s been used this week,
-            and submit a part-used or part-request form when the form is what
-            you need. Everything stays in sync with the maintenance team&apos;s
-            Google Forms.
+            Submit a part-used or part-request form when you need to log usage
+            or ask for stock. Admins can sign in to browse inventory, manage
+            parts, and review submissions. Everything stays in sync with the
+            maintenance team&apos;s Google Forms.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" asChild>
-              <Link href="/inventory">
-                Browse inventory
+              <Link href="/forms">
+                Submit a form
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/forms">Submit a form</Link>
+              <Link href="/login">Admin sign in</Link>
             </Button>
           </div>
         </div>
@@ -80,10 +80,10 @@ export default async function HomePage() {
       {/* Feature row */}
       <section className="mt-16 grid gap-4 sm:grid-cols-3">
         <FeatureLink
-          href="/inventory"
+          href="/login?next=/inventory"
           icon={<Search className="h-5 w-5" />}
           title="Browse inventory"
-          body="Search by SKAPS number or part name. Filter by category, location, or low stock."
+          body="Sign in to search by SKAPS number or part name. Filter by category, location, or low stock."
         />
         <FeatureLink
           href="/forms"

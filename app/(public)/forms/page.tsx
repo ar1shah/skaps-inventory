@@ -46,8 +46,8 @@ export default function FormsPage() {
 
       <p className="mt-10 text-sm text-slate-500">
         Need to view what we have in stock first?{" "}
-        <Link href="/inventory" className="font-medium text-blue-700 hover:underline">
-          Browse the inventory
+        <Link href="/login?next=/inventory" className="font-medium text-blue-700 hover:underline">
+          Sign in to view inventory
         </Link>
         .
       </p>

@@ -7,7 +7,7 @@ import type { Database } from "./types";
  * Runs on every request. Two jobs:
  *   1. Refresh the Supabase auth session and write the new cookies to the
  *      response (so server components see a fresh session next render).
- *   2. Redirect unauthenticated visitors away from /admin/** to /login.
+ *   2. Redirect unauthenticated visitors away from /admin/** and /inventory to /login.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -34,10 +34,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isAdminRoute = path.startsWith("/admin");
+  const isProtectedRoute = path.startsWith("/admin") || path === "/inventory";
   const isLoginRoute = path === "/login";
 
-  if (isAdminRoute && !user) {
+  if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", path);
@@ -46,7 +46,10 @@ export async function updateSession(request: NextRequest) {
 
   if (isLoginRoute && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/admin";
+    const next = request.nextUrl.searchParams.get("next");
+    const safeNext =
+      next?.startsWith("/") && !next.startsWith("//") ? next : null;
+    url.pathname = safeNext ?? "/admin";
     url.searchParams.delete("next");
     return NextResponse.redirect(url);
   }
