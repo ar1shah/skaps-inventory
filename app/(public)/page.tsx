@@ -8,9 +8,14 @@ import { formatNumber } from "@/lib/utils";
 export const revalidate = 60;
 
 async function loadStats() {
-  // Counts come from Supabase. We don't need exact numbers on a public
-  // marketing page, so a HEAD query with count is plenty.
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
 
   const [{ count: partsCount }, { count: usedThisWeekCount }] = await Promise.all([
     supabase.from("parts").select("id", { count: "exact", head: true }),
@@ -62,18 +67,37 @@ export default async function HomePage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-          <StatCard
-            label="Parts tracked"
-            value={formatNumber(stats.parts)}
-            sub="in the master inventory"
-            icon={<Package className="h-5 w-5 text-blue-700" />}
-          />
-          <StatCard
-            label="Used this week"
-            value={formatNumber(stats.usedThisWeek)}
-            sub="parts-used form submissions"
-            icon={<ClipboardList className="h-5 w-5 text-blue-700" />}
-          />
+          {stats ? (
+            <>
+              <StatCard
+                label="Parts tracked"
+                value={formatNumber(stats.parts)}
+                sub="in the master inventory"
+                icon={<Package className="h-5 w-5 text-blue-700" />}
+              />
+              <StatCard
+                label="Used this week"
+                value={formatNumber(stats.usedThisWeek)}
+                sub="parts-used form submissions"
+                icon={<ClipboardList className="h-5 w-5 text-blue-700" />}
+              />
+            </>
+          ) : (
+            <>
+              <StatCard
+                label="Inventory"
+                value="Admin only"
+                sub="sign in to view live counts"
+                icon={<Package className="h-5 w-5 text-blue-700" />}
+              />
+              <StatCard
+                label="Forms"
+                value="Open"
+                sub="submit parts-used or request forms"
+                icon={<ClipboardList className="h-5 w-5 text-blue-700" />}
+              />
+            </>
+          )}
         </div>
       </section>
 
