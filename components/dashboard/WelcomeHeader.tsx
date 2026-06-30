@@ -38,7 +38,7 @@ export async function WelcomeHeader() {
   return (
     <header>
       <p className="text-xs font-medium uppercase tracking-wider text-blue-700">{greeting}</p>
-      <h1 className="mt-1 text-3xl font-semibold tracking-tight text-slate-900">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
         Welcome back, {displayName}
       </h1>
       <p className="mt-1 text-sm text-slate-500">

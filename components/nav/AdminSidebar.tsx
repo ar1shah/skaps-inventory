@@ -2,56 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Bell,
-  BoxIcon,
-  Boxes,
-  ClipboardCheck,
-  ClipboardList,
-  LayoutDashboard,
-  LogOut,
-  Settings,
-  Truck,
-  Wrench,
-} from "lucide-react";
+import { Boxes, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logout } from "@/app/login/actions";
-
-type NavItem = {
-  href: string;
-  label: string;
-  icon: typeof LayoutDashboard;
-  exact?: boolean;
-};
-
-const sections: { label: string; items: NavItem[] }[] = [
-  {
-    label: "Overview",
-    items: [
-      { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-      { href: "/admin/notifications", label: "Notifications", icon: Bell },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { href: "/admin/used", label: "Parts used", icon: ClipboardCheck },
-      { href: "/admin/requests", label: "Parts requests", icon: ClipboardList },
-      { href: "/admin/inventory", label: "Inventory", icon: BoxIcon },
-      { href: "/admin/repair", label: "Parts in repair", icon: Wrench },
-    ],
-  },
-  {
-    label: "Logistics",
-    items: [
-      { href: "/admin/delivered", label: "Delivered / In transit", icon: Truck },
-    ],
-  },
-  {
-    label: "Account",
-    items: [{ href: "/admin/settings", label: "Settings", icon: Settings }],
-  },
-];
+import { adminNavSections, isNavItemActive } from "@/components/nav/admin-nav-config";
 
 export function AdminSidebar({ unreadCount }: { unreadCount: number }) {
   const pathname = usePathname();
@@ -66,16 +20,14 @@ export function AdminSidebar({ unreadCount }: { unreadCount: number }) {
       </div>
 
       <nav className="flex-1 px-3 py-4">
-        {sections.map((section, index) => (
+        {adminNavSections.map((section, index) => (
           <div key={section.label} className={cn(index > 0 && "mt-5")}>
             <p className="mb-1.5 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
               {section.label}
             </p>
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const active = item.exact
-                  ? pathname === item.href
-                  : pathname.startsWith(item.href);
+                const active = isNavItemActive(item, pathname);
                 const Icon = item.icon;
                 return (
                   <Link
