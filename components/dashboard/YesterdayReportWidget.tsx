@@ -24,6 +24,9 @@ export async function YesterdayReportWidget() {
       .lt("submitted_at", today.end),
   ]);
 
+  if (yest.error) console.error("failed to load yesterday's used count", yest.error);
+  if (tod.error) console.error("failed to load today's used count", tod.error);
+
   const yCount = yest.count ?? 0;
   const tCount = tod.count ?? 0;
   const delta = tCount - yCount;
@@ -33,7 +36,7 @@ export async function YesterdayReportWidget() {
       title="Yesterday report"
       description="Yesterday vs today (used-form count)"
       icon={<CalendarClock className="h-4 w-4" />}
-      href="/admin/used"
+      href="/admin/reports/yesterday"
     >
       <div className="flex items-baseline gap-3">
         <span className="text-3xl font-semibold text-slate-900">{formatNumber(yCount)}</span>
@@ -47,7 +50,7 @@ export async function YesterdayReportWidget() {
         </span>
       </div>
       <p className="mt-3 text-xs text-slate-500">
-        Open the full log to see each submission and its PM type.
+        Open the full report for a PM-type and line breakdown.
       </p>
     </WidgetCard>
   );

@@ -8,7 +8,7 @@ export async function ConsumedTodayWidget() {
   const { start, end } = dayRange(0);
   const supabase = await createClient();
 
-  const { data, count } = await supabase
+  const { data, count, error } = await supabase
     .from("submissions")
     .select("skaps_number, part_description, quantity, line, machine_area, pm_type", {
       count: "exact",
@@ -19,7 +19,25 @@ export async function ConsumedTodayWidget() {
     .order("submitted_at", { ascending: false })
     .limit(5);
 
-  const totalQty = (data ?? []).reduce(
+  if (error) {
+    console.error("failed to load today's used submissions", error);
+  }
+
+  // `count` reflects every row today; `data` is capped at 5, so total qty
+  // needs its own head-less sum query to stay accurate once there are more
+  // than 5 submissions in a day.
+  const { data: qtyRows, error: qtyError } = await supabase
+    .from("submissions")
+    .select("quantity")
+    .eq("form_type", "used")
+    .gte("submitted_at", start)
+    .lt("submitted_at", end);
+
+  if (qtyError) {
+    console.error("failed to sum today's used quantity", qtyError);
+  }
+
+  const totalQty = (qtyRows ?? []).reduce(
     (sum, row) => sum + (typeof row.quantity === "number" ? row.quantity : 0),
     0,
   );

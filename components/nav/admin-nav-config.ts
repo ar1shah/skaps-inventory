@@ -1,6 +1,7 @@
 import {
   Bell,
   BoxIcon,
+  CalendarClock,
   ClipboardCheck,
   ClipboardList,
   LayoutDashboard,
@@ -22,6 +23,7 @@ export const adminNavSections: { label: string; items: NavItem[] }[] = [
     items: [
       { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
       { href: "/admin/notifications", label: "Notifications", icon: Bell },
+      { href: "/admin/reports/yesterday", label: "Yesterday report", icon: CalendarClock },
     ],
   },
   {
