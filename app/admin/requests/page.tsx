@@ -1,4 +1,4 @@
-import { SubmissionsTable } from "@/components/admin/SubmissionsTable";
+import { RequestsListClient } from "./RequestsListClient";
 import { createClient } from "@/lib/supabase/server";
 import type { Submission } from "@/lib/supabase/types";
 
@@ -27,15 +27,15 @@ export default async function RequestsLogPage() {
     <div>
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
-          Parts request log
+          Parts requests
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Most recent 500 parts-request submissions, newest first.
+          Track and manage parts requests -- mark them complete, add notes, or edit details.
         </p>
       </header>
 
       <div className="mt-6">
-        <SubmissionsTable submissions={submissions} formType="request" />
+        <RequestsListClient submissions={submissions} />
       </div>
     </div>
   );
