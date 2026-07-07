@@ -6,8 +6,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ExpenseStatusDot } from "@/components/admin/ExpenseStatusDot";
 import { formatDateTime, formatNumber } from "@/lib/utils";
 import type { Submission } from "@/lib/supabase/types";
+
+const EXPENSE_STATUS_LABELS: Record<string, string> = {
+  expensed: "Expensed out",
+  not_expensed: "Not expensed - needs review",
+  check_inventory: "Check inventory / stock balance",
+  datatex_zero: "Already 0 on Datatex",
+};
 
 interface Props {
   submissions: Submission[];
@@ -61,6 +69,7 @@ export function SubmissionsTable({ submissions, formType }: Props) {
             { key: "machine_area", label: "Machine area" },
             { key: "pm_type", label: "PM type" },
             { key: "notes", label: "Notes" },
+            { key: "expense_status", label: "Expense status" },
           ]
         : [
             { key: "submitted_at", label: "Submitted" },
@@ -77,7 +86,17 @@ export function SubmissionsTable({ submissions, formType }: Props) {
 
     const lines = [columns.map((c) => csvEscape(c.label)).join(",")];
     for (const row of filtered) {
-      lines.push(columns.map((c) => csvEscape(row[c.key])).join(","));
+      lines.push(
+        columns
+          .map((c) => {
+            const value = row[c.key];
+            if (c.key === "expense_status" && typeof value === "string") {
+              return csvEscape(EXPENSE_STATUS_LABELS[value] ?? value);
+            }
+            return csvEscape(value);
+          })
+          .join(","),
+      );
     }
 
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -148,7 +167,10 @@ export function SubmissionsTable({ submissions, formType }: Props) {
                   <th className="px-4 py-3 font-medium">Line</th>
                   <th className="px-4 py-3 font-medium">Machine</th>
                   {formType === "used" ? (
-                    <th className="px-4 py-3 font-medium">PM type</th>
+                    <>
+                      <th className="px-4 py-3 font-medium">PM type</th>
+                      <th className="px-4 py-3 font-medium">Expense</th>
+                    </>
                   ) : (
                     <th className="px-4 py-3 font-medium">Urgency</th>
                   )}
@@ -156,14 +178,7 @@ export function SubmissionsTable({ submissions, formType }: Props) {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filtered.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={
-                      row.status === "needs_review"
-                        ? "bg-amber-50/60 hover:bg-amber-50"
-                        : "hover:bg-slate-50/60"
-                    }
-                  >
+                  <tr key={row.id} className="hover:bg-slate-50/60">
                     <td className="px-4 py-3 text-xs text-slate-500">
                       {formatDateTime(row.submitted_at)}
                     </td>
@@ -189,7 +204,12 @@ export function SubmissionsTable({ submissions, formType }: Props) {
                     <td className="px-4 py-3 text-slate-600">{row.line ?? "-"}</td>
                     <td className="px-4 py-3 text-slate-600">{row.machine_area ?? "-"}</td>
                     {formType === "used" ? (
-                      <td className="px-4 py-3 text-slate-600">{row.pm_type ?? "-"}</td>
+                      <>
+                        <td className="px-4 py-3 text-slate-600">{row.pm_type ?? "-"}</td>
+                        <td className="px-4 py-3">
+                          <ExpenseStatusDot status={row.expense_status} />
+                        </td>
+                      </>
                     ) : (
                       <td className="px-4 py-3">
                         {row.urgency ? (
