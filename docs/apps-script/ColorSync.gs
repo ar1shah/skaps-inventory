@@ -50,7 +50,10 @@ var COLOR_MAP = {
   'FFD966': 'check_inventory',
   'FF00FF': 'datatex_zero',     // pink -- already 0 on Datatex
   'F4CCCC': 'datatex_zero',
-  'EAD1DC': 'datatex_zero'
+  'EAD1DC': 'datatex_zero',
+  'E06666': 'datatex_zero',
+  'EA9999': 'datatex_zero',
+  '0000FF': 'testing'           // blue -- test rows, not a real expense status
 };
 
 /** Backgrounds that mean "uncolored" -- never mapped to a status. */
@@ -58,6 +61,15 @@ var BLANK_COLORS = ['#FFFFFF', '#ffffff', ''];
 
 /** How many of the most recent rows the timer-based safety net rescans. */
 var RECENT_ROW_WINDOW = 400;
+
+/**
+ * Earliest row backfillAllRowColors() should touch. The web app only
+ * started logging submissions from row 657 onward (June 11, 2026) --
+ * anything before that has no matching submission in Supabase, so there's
+ * nothing for a color sync to attach to. Adjust this if the ingest
+ * start point ever changes.
+ */
+var BACKFILL_START_ROW = 657;
 
 // ---------------------------------------------------------------------------
 // Installable trigger: fires on any spreadsheet change, including manual
@@ -109,16 +121,22 @@ function backfillAllRowColors() {
     return;
   }
 
-  Logger.log('backfillAllRowColors: scanning rows 2-' + lastRow + ' (column G)...');
+  var startRow = Math.max(2, BACKFILL_START_ROW);
+  if (startRow > lastRow) {
+    Logger.log('BACKFILL_START_ROW (' + BACKFILL_START_ROW + ') is past the last row (' + lastRow + ') -- nothing to do.');
+    return;
+  }
+
+  Logger.log('backfillAllRowColors: scanning rows ' + startRow + '-' + lastRow + ' (column G)...');
   var synced = 0;
-  for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++) {
+  for (var rowNumber = startRow; rowNumber <= lastRow; rowNumber++) {
     var status = detectExpenseStatus(sheet, rowNumber);
     if (status) {
       syncRowColor(sheet, rowNumber);
       synced++;
     }
   }
-  Logger.log('backfillAllRowColors: done. Synced ' + synced + ' colored rows out of ' + (lastRow - 1) + '.');
+  Logger.log('backfillAllRowColors: done. Synced ' + synced + ' colored rows out of ' + (lastRow - startRow + 1) + ' scanned.');
 }
 
 // ---------------------------------------------------------------------------
@@ -134,7 +152,7 @@ function logDistinctRowColors() {
     return;
   }
 
-  var backgrounds = sheet.getRange(2, COLOR_COLUMN, lastRow - 1, COLOR_COLUMN).getBackgrounds();
+  var backgrounds = sheet.getRange(2, COLOR_COLUMN, lastRow - 1, 1).getBackgrounds();
   var seen = {};
   for (var i = 0; i < backgrounds.length; i++) {
     var color = backgrounds[i][0];

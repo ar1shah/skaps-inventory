@@ -15,6 +15,7 @@ const EXPENSE_STATUS_LABELS: Record<string, string> = {
   not_expensed: "Not expensed - needs review",
   check_inventory: "Check inventory / stock balance",
   datatex_zero: "Already 0 on Datatex",
+  testing: "Test row - not a real expense status",
 };
 
 interface Props {

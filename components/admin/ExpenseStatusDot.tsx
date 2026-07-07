@@ -3,6 +3,7 @@ const EXPENSE_STATUS_META: Record<string, { label: string; dotClass: string }> =
   not_expensed: { label: "Not expensed \u2013 needs review", dotClass: "bg-red-500" },
   check_inventory: { label: "Check inventory / stock balance", dotClass: "bg-yellow-400" },
   datatex_zero: { label: "Already 0 on Datatex", dotClass: "bg-pink-400" },
+  testing: { label: "Test row \u2013 not a real expense status", dotClass: "bg-blue-500" },
 };
 
 interface Props {

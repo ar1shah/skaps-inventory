@@ -21,7 +21,13 @@ import { env } from "@/lib/supabase/env";
 
 export const dynamic = "force-dynamic";
 
-const EXPENSE_STATUSES = ["expensed", "not_expensed", "check_inventory", "datatex_zero"] as const;
+const EXPENSE_STATUSES = [
+  "expensed",
+  "not_expensed",
+  "check_inventory",
+  "datatex_zero",
+  "testing",
+] as const;
 type ExpenseStatus = (typeof EXPENSE_STATUSES)[number];
 
 function safeCompare(a: string, b: string): boolean {
