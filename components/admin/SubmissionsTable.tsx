@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import { useMemo, useState, type ReactNode } from "react";
+import { ChevronDown, Download, Search } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,29 @@ import { Badge } from "@/components/ui/badge";
 import { ExpenseStatusDot } from "@/components/admin/ExpenseStatusDot";
 import { formatDateTime, formatNumber } from "@/lib/utils";
 import type { Submission } from "@/lib/supabase/types";
+
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+const MONTH_LABEL_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  month: "long",
+  year: "numeric",
+});
+
+/** "2026-06" -> "June 2026", used both as the group key and the display label. */
+function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthLabel(key: string): string {
+  const [year, month] = key.split("-").map(Number);
+  return MONTH_LABEL_FORMATTER.format(new Date(year, month - 1, 1));
+}
+
+interface MonthGroup {
+  key: string;
+  label: string;
+  rows: Submission[];
+}
 
 const EXPENSE_STATUS_LABELS: Record<string, string> = {
   expensed: "Expensed out",
@@ -22,9 +45,14 @@ interface Props {
   submissions: Submission[];
   /** "used" or "request" -- controls which columns are shown. */
   formType: "used" | "request";
+  /**
+   * When true, splits the table into a "This week" section (shown by default)
+   * followed by the older rows collapsed into one closed section per month.
+   */
+  groupByPeriod?: boolean;
 }
 
-export function SubmissionsTable({ submissions, formType }: Props) {
+export function SubmissionsTable({ submissions, formType, groupByPeriod = false }: Props) {
   const [query, setQuery] = useState("");
   const [showNeedsReview, setShowNeedsReview] = useState(false);
 
@@ -56,6 +84,33 @@ export function SubmissionsTable({ submissions, formType }: Props) {
       return blob.includes(q);
     });
   }, [submissions, query, showNeedsReview]);
+
+  const { thisWeek, byMonth } = useMemo(() => {
+    if (!groupByPeriod) return { thisWeek: filtered, byMonth: [] as MonthGroup[] };
+
+    const now = Date.now();
+    const thisWeek: Submission[] = [];
+    const monthMap = new Map<string, Submission[]>();
+
+    for (const row of filtered) {
+      const submitted = row.submitted_at ? new Date(row.submitted_at) : null;
+      const isValid = submitted && !Number.isNaN(submitted.getTime());
+      if (!isValid || now - submitted.getTime() <= ONE_WEEK_MS) {
+        thisWeek.push(row);
+        continue;
+      }
+      const key = monthKey(submitted);
+      const bucket = monthMap.get(key);
+      if (bucket) bucket.push(row);
+      else monthMap.set(key, [row]);
+    }
+
+    const byMonth = Array.from(monthMap.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([key, rows]) => ({ key, label: monthLabel(key), rows }));
+
+    return { thisWeek, byMonth };
+  }, [filtered, groupByPeriod]);
 
   function downloadCsv() {
     const columns: Array<{ key: keyof Submission; label: string }> =
@@ -111,6 +166,98 @@ export function SubmissionsTable({ submissions, formType }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  function renderTable(rows: Submission[]) {
+    if (rows.length === 0) {
+      return (
+        <Card className="mt-3">
+          <CardContent className="py-10 text-center text-sm text-slate-500">
+            No submissions match your search.
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card className="mt-3 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3 font-medium">Submitted</th>
+                <th className="px-4 py-3 font-medium">Employee</th>
+                <th className="px-4 py-3 font-medium">SKAPS #</th>
+                <th className="px-4 py-3 font-medium">Part</th>
+                <th className="px-4 py-3 text-right font-medium">Qty</th>
+                <th className="px-4 py-3 font-medium">Line</th>
+                <th className="px-4 py-3 font-medium">Machine</th>
+                {formType === "used" ? (
+                  <>
+                    <th className="px-4 py-3 font-medium">PM type</th>
+                    <th className="px-4 py-3 text-center font-medium">Expense</th>
+                  </>
+                ) : (
+                  <th className="px-4 py-3 font-medium">Urgency</th>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.map((row) => (
+                <tr key={row.id} className="hover:bg-slate-50/60">
+                  <td className="px-4 py-3 text-xs text-slate-500">
+                    {formatDateTime(row.submitted_at)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{row.employee_name ?? "-"}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-xs text-slate-700">
+                        {row.skaps_number ?? "-"}
+                      </span>
+                      {row.status === "needs_review" && (
+                        <Badge tone="warning" className="w-fit text-[10px]">
+                          Needs review
+                        </Badge>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 font-medium text-slate-900">
+                    {row.part_description ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-right text-slate-700">
+                    {row.quantity !== null ? formatNumber(row.quantity) : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{row.line ?? "-"}</td>
+                  <td className="px-4 py-3 text-slate-600">{row.machine_area ?? "-"}</td>
+                  {formType === "used" ? (
+                    <>
+                      <td className="px-4 py-3 text-slate-600">{row.pm_type ?? "-"}</td>
+                      <td className="px-4 py-3 text-center">
+                        <ExpenseStatusDot status={row.expense_status} />
+                      </td>
+                    </>
+                  ) : (
+                    <td className="px-4 py-3">
+                      {row.urgency ? (
+                        <Badge
+                          tone={
+                            row.urgency.toLowerCase().includes("urgent") ? "danger" : "neutral"
+                          }
+                        >
+                          {row.urgency}
+                        </Badge>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -148,94 +295,58 @@ export function SubmissionsTable({ submissions, formType }: Props) {
         Showing {formatNumber(filtered.length)} of {formatNumber(submissions.length)} submissions
       </p>
 
-      {filtered.length === 0 ? (
-        <Card className="mt-3">
-          <CardContent className="py-10 text-center text-sm text-slate-500">
-            No submissions match your search.
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="mt-3 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-4 py-3 font-medium">Submitted</th>
-                  <th className="px-4 py-3 font-medium">Employee</th>
-                  <th className="px-4 py-3 font-medium">SKAPS #</th>
-                  <th className="px-4 py-3 font-medium">Part</th>
-                  <th className="px-4 py-3 text-right font-medium">Qty</th>
-                  <th className="px-4 py-3 font-medium">Line</th>
-                  <th className="px-4 py-3 font-medium">Machine</th>
-                  {formType === "used" ? (
-                    <>
-                      <th className="px-4 py-3 font-medium">PM type</th>
-                      <th className="px-4 py-3 font-medium">Expense</th>
-                    </>
-                  ) : (
-                    <th className="px-4 py-3 font-medium">Urgency</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/60">
-                    <td className="px-4 py-3 text-xs text-slate-500">
-                      {formatDateTime(row.submitted_at)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">{row.employee_name ?? "-"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1">
-                        <span className="font-mono text-xs text-slate-700">
-                          {row.skaps_number ?? "-"}
-                        </span>
-                        {row.status === "needs_review" && (
-                          <Badge tone="warning" className="w-fit text-[10px]">
-                            Needs review
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-slate-900">
-                      {row.part_description ?? "-"}
-                    </td>
-                    <td className="px-4 py-3 text-right text-slate-700">
-                      {row.quantity !== null ? formatNumber(row.quantity) : "-"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{row.line ?? "-"}</td>
-                    <td className="px-4 py-3 text-slate-600">{row.machine_area ?? "-"}</td>
-                    {formType === "used" ? (
-                      <>
-                        <td className="px-4 py-3 text-slate-600">{row.pm_type ?? "-"}</td>
-                        <td className="px-4 py-3">
-                          <ExpenseStatusDot status={row.expense_status} />
-                        </td>
-                      </>
-                    ) : (
-                      <td className="px-4 py-3">
-                        {row.urgency ? (
-                          <Badge
-                            tone={
-                              row.urgency.toLowerCase().includes("urgent")
-                                ? "danger"
-                                : "neutral"
-                            }
-                          >
-                            {row.urgency}
-                          </Badge>
-                        ) : (
-                          <span className="text-slate-400">-</span>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {groupByPeriod ? (
+        <>
+          <div className="mt-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              This week
+            </h2>
+            {renderTable(thisWeek)}
           </div>
-        </Card>
+
+          {byMonth.length > 0 && (
+            <div className="mt-6 space-y-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Earlier
+              </h2>
+              {byMonth.map((month) => (
+                <MonthSection
+                  key={month.key}
+                  label={month.label}
+                  count={month.rows.length}
+                  renderTable={() => renderTable(month.rows)}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        renderTable(filtered)
       )}
     </div>
+  );
+}
+
+function MonthSection({
+  label,
+  count,
+  renderTable,
+}: {
+  label: string;
+  count: number;
+  renderTable: () => ReactNode;
+}) {
+  return (
+    <details className="group rounded-lg border border-slate-200 bg-white">
+      <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50/60 [&::-webkit-details-marker]:hidden">
+        <span>{label}</span>
+        <span className="flex items-center gap-2 text-xs font-normal text-slate-500">
+          {formatNumber(count)} submission{count === 1 ? "" : "s"}
+          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+        </span>
+      </summary>
+      <div className="border-t border-slate-200 p-3">{renderTable()}</div>
+    </details>
   );
 }
 
