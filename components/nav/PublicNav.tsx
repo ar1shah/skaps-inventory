@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 const links = [
   { href: "/", label: "Home" },
   { href: "/forms", label: "Forms" },
+  { href: "/changelog", label: "Changelog" },
 ];
 
 export function PublicNav() {
