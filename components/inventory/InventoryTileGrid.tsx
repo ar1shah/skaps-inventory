@@ -5,6 +5,7 @@ import { Filter, Package, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { normalizeSkapsNumber } from "@/lib/forms/normalize";
 import { PartTileCard } from "./PartTileCard";
 import { PartDetailModal } from "./PartDetailModal";
 import type { InventoryPart } from "@/lib/supabase/types";
@@ -16,6 +17,28 @@ interface Props {
 }
 
 type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
+
+/** Lower is a closer SKAPS # match; Infinity means the query only matched some other field. */
+function skapsMatchRank(
+  skapsNumber: string | null,
+  queryTokens: string[],
+  compactQuery: string,
+): number {
+  if (!skapsNumber) return Number.POSITIVE_INFINITY;
+  const lower = skapsNumber.toLowerCase();
+  const compact = normalizeSkapsNumber(skapsNumber);
+
+  if (compactQuery && compact === compactQuery) return 0;
+  if (compactQuery && compact.startsWith(compactQuery)) return 1;
+  if (compactQuery && compact.includes(compactQuery)) return 2;
+
+  const allTokensInSkaps = queryTokens.every((token) => {
+    if (lower.includes(token)) return true;
+    const compactToken = normalizeSkapsNumber(token);
+    return compactToken.length > 0 && compact.includes(compactToken);
+  });
+  return allTokensInSkaps ? 3 : Number.POSITIVE_INFINITY;
+}
 
 export function InventoryTileGrid({ parts, adminMode = false, onEdit }: Props) {
   const [query, setQuery] = useState("");
@@ -31,49 +54,51 @@ export function InventoryTileGrid({ parts, adminMode = false, onEdit }: Props) {
     return Array.from(set).sort();
   }, [parts]);
 
+  // Built once per `parts` load rather than on every keystroke -- typing
+  // only needs to run cheap substring checks against these precomputed
+  // strings instead of re-joining/re-normalizing every part's fields.
+  const searchIndex = useMemo(() => {
+    return parts.map((part) => {
+      const haystackValues = [
+        part.skaps_number,
+        part.name,
+        part.description,
+        part.category,
+        part.sub_category,
+        ...part.variants.flatMap((v) => [
+          v.lwhsdesc,
+          v.zone,
+          v.location,
+          v.storage_location,
+          v.location_on_machine,
+          v.line_no,
+        ]),
+        part.lwhsdesc,
+        part.zone,
+        part.location,
+        part.storage_location,
+        part.location_on_machine,
+      ].filter((v): v is string => Boolean(v));
+
+      return {
+        part,
+        full: haystackValues.join(" ").toLowerCase(),
+        // Separator-insensitive fallback so "insert 97" matches "INSERT_097".
+        compact: haystackValues.map(normalizeSkapsNumber).join(" "),
+      };
+    });
+  }, [parts]);
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return parts.filter((part) => {
-      if (q) {
-        // Search across shared fields + all variant location fields.
-        const sharedHaystack = [
-          part.skaps_number,
-          part.name,
-          part.description,
-          part.category,
-          part.sub_category,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        const variantHaystack = part.variants
-          .flatMap((v) => [
-            v.lwhsdesc,
-            v.zone,
-            v.location,
-            v.storage_location,
-            v.location_on_machine,
-            v.line_no,
-          ])
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        // Also search primary view fields for parts with no variants yet.
-        const primaryHaystack = [
-          part.lwhsdesc,
-          part.zone,
-          part.location,
-          part.storage_location,
-          part.location_on_machine,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        const full = `${sharedHaystack} ${variantHaystack} ${primaryHaystack}`;
-        if (!full.includes(q)) return false;
+    const queryTokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const matches = searchIndex.filter(({ part, full, compact }) => {
+      if (queryTokens.length > 0) {
+        const matchesAllTokens = queryTokens.every((token) => {
+          if (full.includes(token)) return true;
+          const compactToken = normalizeSkapsNumber(token);
+          return compactToken.length > 0 && compact.includes(compactToken);
+        });
+        if (!matchesAllTokens) return false;
       }
 
       if (category && part.category !== category) return false;
@@ -88,7 +113,22 @@ export function InventoryTileGrid({ parts, adminMode = false, onEdit }: Props) {
       }
       return true;
     });
-  }, [parts, query, category, stockFilter]);
+
+    if (queryTokens.length === 0) return matches.map(({ part }) => part);
+
+    // Rank closer SKAPS # matches first (exact > prefix > substring > other
+    // matched fields), so e.g. searching "insert 97" surfaces "INSERT_097"
+    // ahead of parts that only matched on an unrelated field.
+    const compactQuery = queryTokens.map(normalizeSkapsNumber).join("");
+    return matches
+      .map(({ part }, index) => ({
+        part,
+        index,
+        rank: skapsMatchRank(part.skaps_number, queryTokens, compactQuery),
+      }))
+      .sort((a, b) => a.rank - b.rank || a.index - b.index)
+      .map(({ part }) => part);
+  }, [searchIndex, query, category, stockFilter]);
 
   return (
     <div>

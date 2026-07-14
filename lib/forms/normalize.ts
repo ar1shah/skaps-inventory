@@ -78,6 +78,16 @@ export function isUrgent(urgency: string | null): boolean {
   return u.includes("urgent");
 }
 
+/** Buckets a free-text urgency value into a badge tone: grey / yellow / red. */
+export function urgencyTone(urgency: string | null): "neutral" | "warning" | "danger" {
+  if (!urgency) return "neutral";
+  const u = urgency.toLowerCase();
+  if (u.includes("not urgent")) return "neutral";
+  if (u.includes("urgent")) return "danger";
+  if (u.includes("week")) return "warning";
+  return "neutral";
+}
+
 /**
  * Canonical form for SKAPS# comparison: uppercase, strip separators
  * (spaces, underscores, hyphens, etc.). "INSERT_164", "insert 164", and

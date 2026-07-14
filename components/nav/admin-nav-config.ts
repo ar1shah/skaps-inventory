@@ -4,6 +4,7 @@ import {
   CalendarClock,
   ClipboardCheck,
   ClipboardList,
+  History,
   LayoutDashboard,
   Settings,
   Truck,
@@ -43,7 +44,10 @@ export const adminNavSections: { label: string; items: NavItem[] }[] = [
   },
   {
     label: "Account",
-    items: [{ href: "/admin/settings", label: "Settings", icon: Settings }],
+    items: [
+      { href: "/admin/settings", label: "Settings", icon: Settings },
+      { href: "/admin/changelog", label: "Changelog", icon: History },
+    ],
   },
 ];
 

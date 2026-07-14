@@ -32,18 +32,19 @@ export function RequestItemForm({ action, initial, submitLabel, onSuccess }: Pro
 
       <div className="grid grid-cols-2 gap-3">
         <Field
-          label="Part description"
-          name="part_description"
-          defaultValue={initial?.part_description ?? ""}
-          error={state.fieldErrors?.part_description}
-          className="col-span-2"
-        />
-        <Field
           label="SKAPS number"
           name="skaps_number"
           defaultValue={initial?.skaps_number ?? ""}
           error={state.fieldErrors?.skaps_number}
           placeholder="Optional"
+          className="col-span-2"
+        />
+        <Field
+          label="Part description"
+          name="part_description"
+          defaultValue={initial?.part_description ?? ""}
+          error={state.fieldErrors?.part_description}
+          className="col-span-2"
         />
         <Field
           label="Quantity"

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExpenseStatusDot } from "@/components/admin/ExpenseStatusDot";
 import { formatDateTime, formatNumber } from "@/lib/utils";
+import { urgencyTone } from "@/lib/forms/normalize";
 import type { Submission } from "@/lib/supabase/types";
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -186,7 +187,6 @@ export function SubmissionsTable({ submissions, formType, groupByPeriod = false 
                 <th className="px-4 py-3 font-medium">Submitted</th>
                 <th className="px-4 py-3 font-medium">Employee</th>
                 <th className="px-4 py-3 font-medium">SKAPS #</th>
-                <th className="px-4 py-3 font-medium">Part</th>
                 <th className="px-4 py-3 text-right font-medium">Qty</th>
                 <th className="px-4 py-3 font-medium">Line</th>
                 <th className="px-4 py-3 font-medium">Machine</th>
@@ -219,9 +219,6 @@ export function SubmissionsTable({ submissions, formType, groupByPeriod = false 
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-medium text-slate-900">
-                    {row.part_description ?? "-"}
-                  </td>
                   <td className="px-4 py-3 text-right text-slate-700">
                     {row.quantity !== null ? formatNumber(row.quantity) : "-"}
                   </td>
@@ -237,13 +234,7 @@ export function SubmissionsTable({ submissions, formType, groupByPeriod = false 
                   ) : (
                     <td className="px-4 py-3">
                       {row.urgency ? (
-                        <Badge
-                          tone={
-                            row.urgency.toLowerCase().includes("urgent") ? "danger" : "neutral"
-                          }
-                        >
-                          {row.urgency}
-                        </Badge>
+                        <Badge tone={urgencyTone(row.urgency)}>{row.urgency}</Badge>
                       ) : (
                         <span className="text-slate-400">-</span>
                       )}

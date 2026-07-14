@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { RequestItemForm } from "@/components/requests/RequestItemForm";
 import { cn, formatDateTime, formatNumber } from "@/lib/utils";
+import { urgencyTone } from "@/lib/forms/normalize";
 import {
   deleteRequestSubmission,
   markRequestComplete,
@@ -200,9 +201,11 @@ export function RequestsListClient({ submissions }: Props) {
                   </td>
                   <td className="px-4 py-3 text-slate-700">{row.employee_name ?? "-"}</td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-slate-900">{row.part_description ?? "-"}</p>
-                    {row.skaps_number && (
-                      <p className="font-mono text-xs text-slate-500">{row.skaps_number}</p>
+                    <p className="font-mono font-medium text-slate-900">
+                      {row.skaps_number ?? "-"}
+                    </p>
+                    {row.part_description && (
+                      <p className="text-xs text-slate-500">{row.part_description}</p>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right text-slate-700">
@@ -213,11 +216,7 @@ export function RequestsListClient({ submissions }: Props) {
                   </td>
                   <td className="px-4 py-3">
                     {row.urgency ? (
-                      <Badge
-                        tone={row.urgency.toLowerCase().includes("urgent") ? "danger" : "neutral"}
-                      >
-                        {row.urgency}
-                      </Badge>
+                      <Badge tone={urgencyTone(row.urgency)}>{row.urgency}</Badge>
                     ) : (
                       <span className="text-slate-400">-</span>
                     )}
