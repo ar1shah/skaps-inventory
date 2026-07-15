@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MapPin, Package, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatNumber, formatDate } from "@/lib/utils";
+import { getStockStatus } from "@/lib/inventory/stock-status";
 import type { InventoryPart, PartVariant } from "@/lib/supabase/types";
 
 interface Props {
@@ -23,8 +24,8 @@ function DetailField({
   if (value === null || value === undefined || value === "") return null;
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</dt>
-      <dd className="mt-0.5 text-sm text-slate-800 break-words">{String(value)}</dd>
+      <dt className="text-xs font-medium tracking-wider text-slate-400 uppercase">{label}</dt>
+      <dd className="mt-0.5 text-sm break-words text-slate-800">{String(value)}</dd>
     </div>
   );
 }
@@ -36,19 +37,7 @@ function variantLabel(v: PartVariant, idx: number): string {
 
 export function PartDetailModal({ part, onClose, adminMode, onEdit }: Props) {
   const qty = part.quantity_on_hand ?? 0;
-  const threshold = part.reorder_threshold;
-  const stockTone: "success" | "warning" | "danger" =
-    qty <= 0
-      ? "danger"
-      : threshold !== null && threshold !== undefined && qty <= threshold
-        ? "warning"
-        : "success";
-  const stockLabel =
-    qty <= 0
-      ? "Out of stock"
-      : threshold !== null && qty <= threshold
-        ? "Low stock"
-        : "In stock";
+  const { tone: stockTone, label: stockLabel } = getStockStatus(part);
 
   // Determine which source to use for location data.
   // If variants are loaded use them; otherwise fall back to view fields on part.
@@ -59,17 +48,25 @@ export function PartDetailModal({ part, onClose, adminMode, onEdit }: Props) {
 
   // The "active location" — either the selected variant or synthesised from
   // the view's primary-variant columns.
-  const activeLocation: Omit<PartVariant, "id" | "part_id" | "created_at" | "updated_at" | "source_sheet" | "external_row_id" | "sort_order"> =
-    hasVariants
-      ? variants[activeIdx] ?? variants[0]
-      : {
-          lwhsdesc: part.lwhsdesc,
-          zone: part.zone,
-          location: part.location,
-          storage_location: part.storage_location,
-          location_on_machine: part.location_on_machine,
-          line_no: part.line_no,
-        };
+  const activeLocation: Omit<
+    PartVariant,
+    | "id"
+    | "part_id"
+    | "created_at"
+    | "updated_at"
+    | "source_sheet"
+    | "external_row_id"
+    | "sort_order"
+  > = hasVariants
+    ? (variants[activeIdx] ?? variants[0])
+    : {
+        lwhsdesc: part.lwhsdesc,
+        zone: part.zone,
+        location: part.location,
+        storage_location: part.storage_location,
+        location_on_machine: part.location_on_machine,
+        line_no: part.line_no,
+      };
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -100,7 +97,7 @@ export function PartDetailModal({ part, onClose, adminMode, onEdit }: Props) {
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-10 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+          className="absolute top-4 right-4 z-10 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
           aria-label="Close"
         >
           <X className="h-4 w-4" />
@@ -122,18 +119,17 @@ export function PartDetailModal({ part, onClose, adminMode, onEdit }: Props) {
             </div>
 
             <div className="min-w-0 flex-1 pt-1">
-              <h2 className="font-mono text-xl font-bold leading-tight text-slate-900">
+              <h2 className="font-mono text-xl leading-tight font-bold text-slate-900">
                 {part.skaps_number}
               </h2>
               <p className="mt-1 text-sm text-slate-500">{part.name}</p>
               {part.description && (
-                <p className="mt-1.5 text-sm text-slate-600 leading-snug">{part.description}</p>
+                <p className="mt-1.5 text-sm leading-snug text-slate-600">{part.description}</p>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Badge tone={stockTone}>{stockLabel}</Badge>
                 <span className="text-sm font-medium text-slate-700">
-                  Qty:{" "}
-                  <span className="font-semibold">{formatNumber(qty)}</span>
+                  Qty: <span className="font-semibold">{formatNumber(qty)}</span>
                   {part.unit && part.unit !== "each" && (
                     <span className="ml-1 text-slate-400">{part.unit}</span>
                   )}
@@ -191,7 +187,7 @@ export function PartDetailModal({ part, onClose, adminMode, onEdit }: Props) {
                 activeLocation.line_no) && (
                 <>
                   <div className="col-span-2 mt-2 border-t border-slate-100 pt-3">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <p className="text-xs font-semibold tracking-wider text-slate-500 uppercase">
                       {hasVariants && variants.length > 1
                         ? `Warehouse: ${variantLabel(variants[activeIdx], activeIdx)}`
                         : "Location"}
@@ -212,7 +208,7 @@ export function PartDetailModal({ part, onClose, adminMode, onEdit }: Props) {
               <DetailField label="Last Updated" value={formatDate(part.updated_at)} />
               {part.notes && (
                 <div className="col-span-2">
-                  <dt className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                  <dt className="text-xs font-medium tracking-wider text-slate-400 uppercase">
                     Notes
                   </dt>
                   <dd className="mt-0.5 text-sm text-slate-800">{part.notes}</dd>

@@ -6,10 +6,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ExpenseStatusDot } from "@/components/admin/ExpenseStatusDot";
+import { PartDetailModal } from "@/components/inventory/PartDetailModal";
+import { PartHoverPreview } from "@/components/inventory/PartHoverPreview";
+import { EditPartModal } from "@/components/inventory/EditPartModal";
 import { formatDateTime, formatNumber } from "@/lib/utils";
-import { urgencyTone } from "@/lib/forms/normalize";
-import type { Submission } from "@/lib/supabase/types";
+import { urgencyTone, normalizeSkapsNumber } from "@/lib/forms/normalize";
+import type { InventoryPart, Part, Submission } from "@/lib/supabase/types";
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -51,11 +55,51 @@ interface Props {
    * followed by the older rows collapsed into one closed section per month.
    */
   groupByPeriod?: boolean;
+  /**
+   * Master-list parts, used to resolve a submission's skaps_number to a real
+   * part for the hover preview / detail popup. Only passed by the used log.
+   */
+  parts?: Part[];
+  inventoryParts?: InventoryPart[];
 }
 
-export function SubmissionsTable({ submissions, formType, groupByPeriod = false }: Props) {
+export function SubmissionsTable({
+  submissions,
+  formType,
+  groupByPeriod = false,
+  parts,
+  inventoryParts,
+}: Props) {
   const [query, setQuery] = useState("");
   const [showNeedsReview, setShowNeedsReview] = useState(false);
+  const [selectedPart, setSelectedPart] = useState<InventoryPart | null>(null);
+  const [editingPart, setEditingPart] = useState<Part | null>(null);
+
+  // Normalized skaps# -> part, so recognized rows can link to the master
+  // part even though `submissions.skaps_number` is free text with no FK.
+  // Ambiguous normalized keys (two parts collapsing to the same key) are
+  // dropped rather than guessed at.
+  const partsByNormalizedSkaps = useMemo(() => {
+    const map = new Map<string, InventoryPart>();
+    const seen = new Set<string>();
+    for (const part of inventoryParts ?? []) {
+      if (!part.skaps_number) continue;
+      const key = normalizeSkapsNumber(part.skaps_number);
+      if (seen.has(key)) {
+        map.delete(key);
+        continue;
+      }
+      seen.add(key);
+      map.set(key, part);
+    }
+    return map;
+  }, [inventoryParts]);
+
+  function handleEdit(skapsNumber: string) {
+    const part = parts?.find((p) => p.skaps_number === skapsNumber);
+    if (part) setEditingPart(part);
+    setSelectedPart(null);
+  }
 
   const needsReviewCount = useMemo(
     () => submissions.filter((s) => s.status === "needs_review").length,
@@ -182,7 +226,7 @@ export function SubmissionsTable({ submissions, formType, groupByPeriod = false 
       <Card className="mt-3 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50/60 text-left text-xs uppercase tracking-wide text-slate-500">
+            <thead className="border-b border-slate-200 bg-slate-50/60 text-left text-xs tracking-wide text-slate-500 uppercase">
               <tr>
                 <th className="px-4 py-3 font-medium">Submitted</th>
                 <th className="px-4 py-3 font-medium">Employee</th>
@@ -201,47 +245,70 @@ export function SubmissionsTable({ submissions, formType, groupByPeriod = false 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50/60">
-                  <td className="px-4 py-3 text-xs text-slate-500">
-                    {formatDateTime(row.submitted_at)}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{row.employee_name ?? "-"}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-mono text-xs text-slate-700">
-                        {row.skaps_number ?? "-"}
-                      </span>
-                      {row.status === "needs_review" && (
-                        <Badge tone="warning" className="w-fit text-[10px]">
-                          Needs review
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right text-slate-700">
-                    {row.quantity !== null ? formatNumber(row.quantity) : "-"}
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{row.line ?? "-"}</td>
-                  <td className="px-4 py-3 text-slate-600">{row.machine_area ?? "-"}</td>
-                  {formType === "used" ? (
-                    <>
-                      <td className="px-4 py-3 text-slate-600">{row.pm_type ?? "-"}</td>
-                      <td className="px-4 py-3 text-center">
-                        <ExpenseStatusDot status={row.expense_status} />
-                      </td>
-                    </>
-                  ) : (
-                    <td className="px-4 py-3">
-                      {row.urgency ? (
-                        <Badge tone={urgencyTone(row.urgency)}>{row.urgency}</Badge>
-                      ) : (
-                        <span className="text-slate-400">-</span>
-                      )}
+              {rows.map((row) => {
+                const matchedPart = row.skaps_number
+                  ? partsByNormalizedSkaps.get(normalizeSkapsNumber(row.skaps_number))
+                  : undefined;
+
+                return (
+                  <tr key={row.id} className="hover:bg-slate-50/60">
+                    <td className="px-4 py-3 text-xs text-slate-500">
+                      {formatDateTime(row.submitted_at)}
                     </td>
-                  )}
-                </tr>
-              ))}
+                    <td className="px-4 py-3 text-slate-700">{row.employee_name ?? "-"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1">
+                        {matchedPart ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={() => setSelectedPart(matchedPart)}
+                                className="w-fit font-mono text-xs text-blue-700 underline decoration-dotted decoration-from-font underline-offset-2 hover:text-blue-900"
+                              >
+                                {row.skaps_number}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <PartHoverPreview part={matchedPart} />
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="font-mono text-xs text-slate-700">
+                            {row.skaps_number ?? "-"}
+                          </span>
+                        )}
+                        {row.status === "needs_review" && (
+                          <Badge tone="warning" className="w-fit text-[10px]">
+                            Needs review
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right text-slate-700">
+                      {row.quantity !== null ? formatNumber(row.quantity) : "-"}
+                    </td>
+                    <td className="px-4 py-3 text-slate-600">{row.line ?? "-"}</td>
+                    <td className="px-4 py-3 text-slate-600">{row.machine_area ?? "-"}</td>
+                    {formType === "used" ? (
+                      <>
+                        <td className="px-4 py-3 text-slate-600">{row.pm_type ?? "-"}</td>
+                        <td className="px-4 py-3 text-center">
+                          <ExpenseStatusDot status={row.expense_status} />
+                        </td>
+                      </>
+                    ) : (
+                      <td className="px-4 py-3">
+                        {row.urgency ? (
+                          <Badge tone={urgencyTone(row.urgency)}>{row.urgency}</Badge>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -250,71 +317,84 @@ export function SubmissionsTable({ submissions, formType, groupByPeriod = false 
   }
 
   return (
-    <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative flex-1 sm:max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search SKAPS #, part, employee..."
-            className="pl-9"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          {formType === "used" && needsReviewCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowNeedsReview((v) => !v)}
-              className={
-                showNeedsReview
-                  ? "rounded-full bg-amber-500 px-3 py-1 text-xs font-medium text-white"
-                  : "rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
-              }
-            >
-              Needs review ({needsReviewCount})
-            </button>
-          )}
-          <Button variant="outline" size="sm" onClick={downloadCsv}>
-            <Download className="h-4 w-4" />
-            Export CSV
-          </Button>
-        </div>
-      </div>
-
-      <p className="mt-3 text-xs text-slate-500">
-        Showing {formatNumber(filtered.length)} of {formatNumber(submissions.length)} submissions
-      </p>
-
-      {groupByPeriod ? (
-        <>
-          <div className="mt-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              This week
-            </h2>
-            {renderTable(thisWeek)}
+    <TooltipProvider delayDuration={200}>
+      <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex-1 sm:max-w-md">
+            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search SKAPS #, part, employee..."
+              className="pl-9"
+            />
           </div>
+          <div className="flex items-center gap-2">
+            {formType === "used" && needsReviewCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowNeedsReview((v) => !v)}
+                className={
+                  showNeedsReview
+                    ? "rounded-full bg-amber-500 px-3 py-1 text-xs font-medium text-white"
+                    : "rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+                }
+              >
+                Needs review ({needsReviewCount})
+              </button>
+            )}
+            <Button variant="outline" size="sm" onClick={downloadCsv}>
+              <Download className="h-4 w-4" />
+              Export CSV
+            </Button>
+          </div>
+        </div>
 
-          {byMonth.length > 0 && (
-            <div className="mt-6 space-y-2">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Earlier
+        <p className="mt-3 text-xs text-slate-500">
+          Showing {formatNumber(filtered.length)} of {formatNumber(submissions.length)} submissions
+        </p>
+
+        {groupByPeriod ? (
+          <>
+            <div className="mt-4">
+              <h2 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                This week
               </h2>
-              {byMonth.map((month) => (
-                <MonthSection
-                  key={month.key}
-                  label={month.label}
-                  count={month.rows.length}
-                  renderTable={() => renderTable(month.rows)}
-                />
-              ))}
+              {renderTable(thisWeek)}
             </div>
-          )}
-        </>
-      ) : (
-        renderTable(filtered)
-      )}
-    </div>
+
+            {byMonth.length > 0 && (
+              <div className="mt-6 space-y-2">
+                <h2 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                  Earlier
+                </h2>
+                {byMonth.map((month) => (
+                  <MonthSection
+                    key={month.key}
+                    label={month.label}
+                    count={month.rows.length}
+                    renderTable={() => renderTable(month.rows)}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          renderTable(filtered)
+        )}
+
+        {selectedPart && (
+          <PartDetailModal
+            part={selectedPart}
+            onClose={() => setSelectedPart(null)}
+            adminMode
+            onEdit={handleEdit}
+          />
+        )}
+
+        {editingPart && <EditPartModal part={editingPart} onClose={() => setEditingPart(null)} />}
+      </div>
+    </TooltipProvider>
   );
 }
 

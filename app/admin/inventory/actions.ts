@@ -51,9 +51,7 @@ const PartInput = z.object({
     .trim()
     .max(20)
     .transform((s) => (s.length === 0 ? "each" : s)),
-  current_quantity: z.coerce
-    .number()
-    .nonnegative({ message: "Quantity must be zero or positive" }),
+  current_quantity: z.coerce.number().nonnegative({ message: "Quantity must be zero or positive" }),
   reorder_threshold: optionalNumber,
   notes: optionalString(2000),
 });
@@ -113,6 +111,7 @@ export async function updatePart(
 
   revalidatePath("/admin/inventory");
   revalidatePath("/inventory");
+  revalidatePath("/admin/used");
   return { ok: true };
 }
 

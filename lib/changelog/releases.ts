@@ -15,6 +15,23 @@ export type Release = {
 // Curated from the project's commit history. Newest first.
 export const releases: Release[] = [
   {
+    date: "2026-07-15",
+    title: "Linked parts on the used log",
+    summary:
+      "Recognized SKAPS #s on the parts-used log now connect straight to the master part, so you don't have to jump over to Inventory to check on something.",
+    items: [
+      {
+        tag: "New",
+        text: "Hover a recognized SKAPS # on the parts-used log for a quick preview of the part.",
+      },
+      {
+        tag: "New",
+        text: "Click a recognized SKAPS # to view full part details, right from the log.",
+      },
+      { tag: "New", text: "Edit the part directly from that popup without leaving the log." },
+    ],
+  },
+  {
     date: "2026-07-14",
     title: "Admin table clarity & smarter inventory search",
     summary:

@@ -1,4 +1,5 @@
 import { SubmissionsTable } from "@/components/admin/SubmissionsTable";
+import { loadParts } from "@/lib/inventory/load-parts";
 import { createClient } from "@/lib/supabase/server";
 import type { Submission } from "@/lib/supabase/types";
 
@@ -23,7 +24,10 @@ async function loadSubmissions(): Promise<Submission[]> {
 }
 
 export default async function UsedLogPage() {
-  const submissions = await loadSubmissions();
+  const [submissions, { parts, inventoryParts }] = await Promise.all([
+    loadSubmissions(),
+    loadParts(),
+  ]);
 
   return (
     <div>
@@ -35,7 +39,13 @@ export default async function UsedLogPage() {
       </header>
 
       <div className="mt-6">
-        <SubmissionsTable submissions={submissions} formType="used" groupByPeriod />
+        <SubmissionsTable
+          submissions={submissions}
+          formType="used"
+          groupByPeriod
+          parts={parts}
+          inventoryParts={inventoryParts}
+        />
       </div>
     </div>
   );
