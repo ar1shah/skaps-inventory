@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ExpenseStatusDot } from "@/components/admin/ExpenseStatusDot";
 import { RequestItemForm } from "@/components/requests/RequestItemForm";
 import { cn, formatDateTime, formatNumber } from "@/lib/utils";
 import { urgencyTone } from "@/lib/forms/normalize";
@@ -19,6 +20,14 @@ import {
 import type { Submission } from "@/lib/supabase/types";
 
 type StatusFilter = "open" | "closed" | "all";
+
+const EXPENSE_STATUS_LABELS: Record<string, string> = {
+  expensed: "Expensed out",
+  not_expensed: "Not expensed - needs review",
+  check_inventory: "Check inventory / stock balance",
+  datatex_zero: "Already 0 on Datatex",
+  testing: "Test row - not a real expense status",
+};
 
 interface Props {
   submissions: Submission[];
@@ -104,11 +113,22 @@ export function RequestsListClient({ submissions }: Props) {
       { key: "machine_area", label: "Machine area" },
       { key: "notes", label: "Notes" },
       { key: "status", label: "Status" },
+      { key: "expense_status", label: "Expense status" },
     ];
 
     const lines = [columns.map((c) => csvEscape(c.label)).join(",")];
     for (const row of filtered) {
-      lines.push(columns.map((c) => csvEscape(row[c.key])).join(","));
+      lines.push(
+        columns
+          .map((c) => {
+            const value = row[c.key];
+            if (c.key === "expense_status" && typeof value === "string") {
+              return csvEscape(EXPENSE_STATUS_LABELS[value] ?? value);
+            }
+            return csvEscape(value);
+          })
+          .join(","),
+      );
     }
 
     const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
@@ -188,6 +208,7 @@ export function RequestsListClient({ submissions }: Props) {
                 <th className="px-4 py-3 text-right">Qty</th>
                 <th className="px-4 py-3 text-left">Line / Area</th>
                 <th className="px-4 py-3 text-left">Urgency</th>
+                <th className="px-4 py-3 text-center">Expense</th>
                 <th className="px-4 py-3 text-left">Notes</th>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3" />
@@ -220,6 +241,9 @@ export function RequestsListClient({ submissions }: Props) {
                     ) : (
                       <span className="text-slate-400">-</span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <ExpenseStatusDot status={row.expense_status} />
                   </td>
                   <td className="max-w-[220px] truncate px-4 py-3 text-slate-600" title={row.notes ?? undefined}>
                     {row.notes ?? "-"}

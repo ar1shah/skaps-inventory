@@ -8,7 +8,6 @@ import {
   ClipboardList,
 } from "lucide-react";
 import { WidgetCard } from "./WidgetCard";
-import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { cn, formatDateTime } from "@/lib/utils";
 
@@ -18,14 +17,6 @@ const iconByType: Record<string, React.ReactNode> = {
   low_stock: <AlertTriangle className="h-3.5 w-3.5" />,
   unknown_skaps: <CircleHelp className="h-3.5 w-3.5" />,
   stock_updated: <ArrowDownCircle className="h-3.5 w-3.5" />,
-};
-
-const toneByType: Record<string, "accent" | "warning" | "danger" | "neutral" | "success"> = {
-  new_request: "accent",
-  urgent_request: "danger",
-  low_stock: "warning",
-  unknown_skaps: "neutral",
-  stock_updated: "success",
 };
 
 const toneBgByType: Record<string, string> = {
@@ -42,14 +33,14 @@ export async function NotificationsPanel() {
     .from("notifications")
     .select("id, type, title, body, link, created_at, read_at")
     .order("created_at", { ascending: false })
-    .limit(5);
+    .limit(3);
 
   const notifications = data ?? [];
 
   return (
     <WidgetCard
       title="Notifications"
-      description="Latest 5 alerts"
+      description="Latest 3 alerts"
       icon={<Bell className="h-4 w-4" />}
       href="/admin/notifications"
     >
@@ -58,20 +49,17 @@ export async function NotificationsPanel() {
       ) : (
         <ul className="divide-y divide-slate-100">
           {notifications.map((n) => (
-            <li key={n.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+            <li key={n.id} className="flex items-start gap-2 py-2 first:pt-0 last:pb-0">
               <div
                 className={cn(
-                  "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                  "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
                   toneBgByType[n.type] ?? "bg-slate-100 text-slate-600",
                 )}
               >
                 {iconByType[n.type] ?? <Bell className="h-3.5 w-3.5" />}
               </div>
-              <div className="min-w-0 flex-1 space-y-1">
-                <Badge tone={toneByType[n.type] ?? "neutral"} className="w-fit">
-                  {n.type.replace(/_/g, " ")}
-                </Badge>
-                <p className="text-sm font-medium leading-snug text-slate-900">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium leading-snug text-slate-900">
                   {n.link ? (
                     <Link href={n.link} className="hover:underline">
                       {n.title}
@@ -83,7 +71,7 @@ export async function NotificationsPanel() {
                 <p className="text-xs text-slate-500">{formatDateTime(n.created_at)}</p>
               </div>
               {!n.read_at && (
-                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-700" />
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-blue-700" />
               )}
             </li>
           ))}
