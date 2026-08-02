@@ -89,6 +89,19 @@ export function urgencyTone(urgency: string | null): "neutral" | "warning" | "da
 }
 
 /**
+ * Short label for the requests table — form choices are wordy
+ * ("Not urgent ( can take upto 1 month)") and overflow the badge.
+ */
+export function urgencyLabel(urgency: string | null): string {
+  if (!urgency) return "";
+  const u = urgency.toLowerCase();
+  if (u.includes("not urgent")) return "Not urgent";
+  if (u.includes("urgent")) return "Urgent";
+  if (u.includes("week")) return "2–3 weeks";
+  return urgency;
+}
+
+/**
  * Canonical form for SKAPS# comparison: uppercase, strip separators
  * (spaces, underscores, hyphens, etc.). "INSERT_164", "insert 164", and
  * "INSERT 164" all become "INSERT164".

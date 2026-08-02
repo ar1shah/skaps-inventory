@@ -2,24 +2,25 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Download, Pencil, Search, Trash2, Undo2 } from "lucide-react";
+import { CheckCircle2, Download, Package, Pencil, Search, Trash2, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ExpenseStatusDot } from "@/components/admin/ExpenseStatusDot";
 import { RequestItemForm } from "@/components/requests/RequestItemForm";
-import { cn, formatDateTime, formatNumber } from "@/lib/utils";
-import { urgencyTone } from "@/lib/forms/normalize";
+import { cn, formatDate, formatNumber, formatTime } from "@/lib/utils";
+import { urgencyLabel, urgencyTone } from "@/lib/forms/normalize";
 import {
   deleteRequestSubmission,
   markRequestComplete,
+  markRequestOrdered,
   markRequestRequested,
   updateRequestSubmission,
 } from "./actions";
 import type { Submission } from "@/lib/supabase/types";
 
-type StatusFilter = "open" | "closed" | "all";
+type StatusFilter = "open" | "ordered" | "closed" | "all";
 
 const EXPENSE_STATUS_LABELS: Record<string, string> = {
   expensed: "Expensed out",
@@ -62,7 +63,19 @@ export function RequestsListClient({ submissions }: Props) {
     });
   }, [submissions, query, statusFilter]);
 
-  const requestedCount = submissions.filter((s) => s.status !== "closed").length;
+  const requestedCount = submissions.filter((s) => s.status === "open").length;
+
+  function handleMarkOrdered(row: Submission) {
+    if (!confirm(`Mark "${row.part_description ?? "this request"}" as ordered?`)) return;
+    startTransition(async () => {
+      try {
+        await markRequestOrdered(row.id);
+        toast.success("Marked as ordered");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to update status");
+      }
+    });
+  }
 
   function handleMarkComplete(row: Submission) {
     if (!confirm(`Mark "${row.part_description ?? "this request"}" as complete?`)) return;
@@ -142,6 +155,15 @@ export function RequestsListClient({ submissions }: Props) {
     URL.revokeObjectURL(url);
   }
 
+  const emptyMessage =
+    statusFilter === "open"
+      ? "No open requests."
+      : statusFilter === "ordered"
+        ? "No ordered requests."
+        : statusFilter === "closed"
+          ? "No completed requests."
+          : "No requests match your search.";
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -164,6 +186,7 @@ export function RequestsListClient({ submissions }: Props) {
         {(
           [
             ["open", "Requested"],
+            ["ordered", "Ordered"],
             ["closed", "Complete"],
             ["all", "All"],
           ] as Array<[StatusFilter, string]>
@@ -194,69 +217,104 @@ export function RequestsListClient({ submissions }: Props) {
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-slate-500">
-            {statusFilter === "open" ? "No open requests." : "No requests match your search."}
+            {emptyMessage}
           </CardContent>
         </Card>
       ) : (
         <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="w-full text-sm">
+          <table className="w-full table-fixed text-sm">
+            <colgroup>
+              <col className="w-[6.5rem]" />
+              <col className="w-[6.5rem]" />
+              <col className="w-[11rem]" />
+              <col className="w-12" />
+              <col className="w-[5.5rem]" />
+              <col className="w-[6.5rem]" />
+              <col className="w-10" />
+              <col />
+              <col className="w-[6.5rem]" />
+              <col className="w-[6.5rem]" />
+            </colgroup>
             <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
-                <th className="px-4 py-3 text-left">Submitted</th>
-                <th className="px-4 py-3 text-left">Employee</th>
-                <th className="px-4 py-3 text-left">Part</th>
-                <th className="px-4 py-3 text-right">Qty</th>
-                <th className="px-4 py-3 text-left">Line / Area</th>
-                <th className="px-4 py-3 text-left">Urgency</th>
-                <th className="px-4 py-3 text-center">Expense</th>
-                <th className="px-4 py-3 text-left">Notes</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3" />
+                <th className="px-3 py-3 text-left">Submitted</th>
+                <th className="px-3 py-3 text-left">Employee</th>
+                <th className="px-3 py-3 text-left">Part</th>
+                <th className="px-3 py-3 text-right">Qty</th>
+                <th className="px-3 py-3 text-left">Line / Area</th>
+                <th className="px-3 py-3 text-left">Urgency</th>
+                <th className="px-3 py-3 text-center" title="Expense">
+                  Exp
+                </th>
+                <th className="px-3 py-3 text-left">Notes</th>
+                <th className="px-3 py-3 text-left">Status</th>
+                <th className="px-3 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filtered.map((row) => (
-                <tr key={row.id} className="bg-white hover:bg-slate-50">
-                  <td className="whitespace-nowrap px-4 py-3 text-xs text-slate-500">
-                    {formatDateTime(row.submitted_at)}
+                <tr key={row.id} className="bg-white hover:bg-slate-50 align-top">
+                  <td className="px-3 py-3 text-xs text-slate-500">
+                    <p className="leading-snug text-slate-700">{formatDate(row.submitted_at)}</p>
+                    <p className="leading-snug text-slate-400">{formatTime(row.submitted_at)}</p>
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{row.employee_name ?? "-"}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3 text-slate-700">
+                    <span className="line-clamp-3 break-words">{row.employee_name ?? "-"}</span>
+                  </td>
+                  <td className="px-3 py-3">
                     <p className="font-mono font-medium text-slate-900">
                       {row.skaps_number ?? "-"}
                     </p>
                     {row.part_description && (
-                      <p className="text-xs text-slate-500">{row.part_description}</p>
+                      <p className="mt-0.5 line-clamp-3 text-xs leading-snug text-slate-500">
+                        {row.part_description}
+                      </p>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-slate-700">
+                  <td className="px-3 py-3 text-right text-slate-700">
                     {row.quantity !== null ? formatNumber(row.quantity) : "-"}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">
-                    {[row.line, row.machine_area].filter(Boolean).join(" / ") || "-"}
+                  <td className="px-3 py-3 text-slate-600">
+                    {row.line || row.machine_area ? (
+                      <>
+                        {row.line && <p className="leading-snug">{row.line}</p>}
+                        {row.machine_area && (
+                          <p className="leading-snug text-slate-400">{row.machine_area}</p>
+                        )}
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3">
                     {row.urgency ? (
-                      <Badge tone={urgencyTone(row.urgency)}>{row.urgency}</Badge>
+                      <Badge
+                        className="whitespace-nowrap"
+                        tone={urgencyTone(row.urgency)}
+                        title={row.urgency}
+                      >
+                        {urgencyLabel(row.urgency)}
+                      </Badge>
                     ) : (
                       <span className="text-slate-400">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-3 py-3 text-center">
                     <ExpenseStatusDot status={row.expense_status} />
                   </td>
-                  <td className="max-w-[220px] truncate px-4 py-3 text-slate-600" title={row.notes ?? undefined}>
-                    {row.notes ?? "-"}
+                  <td
+                    className="px-3 py-3 text-slate-600"
+                    title={row.notes ?? undefined}
+                  >
+                    <p className="line-clamp-4 whitespace-pre-wrap break-words">
+                      {row.notes ?? "-"}
+                    </p>
                   </td>
-                  <td className="px-4 py-3">
-                    {row.status === "closed" ? (
-                      <Badge tone="success">Complete</Badge>
-                    ) : (
-                      <Badge tone="accent">Requested</Badge>
-                    )}
+                  <td className="px-3 py-3">
+                    <StatusBadge status={row.status} />
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
+                  <td className="py-3 pl-4 pr-3">
+                    <div className="flex items-center justify-end gap-1.5">
                       {row.status === "closed" ? (
                         <button
                           type="button"
@@ -267,7 +325,7 @@ export function RequestsListClient({ submissions }: Props) {
                         >
                           <Undo2 className="h-4 w-4" />
                         </button>
-                      ) : (
+                      ) : row.status === "ordered" ? (
                         <button
                           type="button"
                           title="Mark as complete"
@@ -276,6 +334,16 @@ export function RequestsListClient({ submissions }: Props) {
                           className="rounded p-1 text-slate-400 hover:bg-green-50 hover:text-green-700 disabled:opacity-40"
                         >
                           <CheckCircle2 className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          title="Mark as ordered"
+                          disabled={pending}
+                          onClick={() => handleMarkOrdered(row)}
+                          className="rounded p-1 text-slate-400 hover:bg-amber-50 hover:text-amber-700 disabled:opacity-40"
+                        >
+                          <Package className="h-4 w-4" />
                         </button>
                       )}
                       <button
@@ -307,6 +375,12 @@ export function RequestsListClient({ submissions }: Props) {
       {editing && <EditRequestModal row={editing} onClose={() => setEditing(null)} />}
     </div>
   );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  if (status === "closed") return <Badge className="whitespace-nowrap" tone="success">Complete</Badge>;
+  if (status === "ordered") return <Badge className="whitespace-nowrap" tone="warning">Ordered</Badge>;
+  return <Badge className="whitespace-nowrap" tone="accent">Requested</Badge>;
 }
 
 function EditRequestModal({ row, onClose }: { row: Submission; onClose: () => void }) {

@@ -8,6 +8,10 @@ being too rigid about it.
 
 ### Added
 
+- Ordered status on the parts-request log: new filter tab, amber badge,
+  and a Requested → Ordered → Complete workflow (package button marks
+  ordered; check button marks complete once ordered). Edit form can set
+  Ordered too. Uses the existing `submissions.status` value — no migration.
 - Initial cut of the public site: home, inventory browse, and forms page.
 - Admin dashboard with welcome header, consumed-today / yesterday widgets,
   weekly chart, notifications panel, quick form links, and placeholders
@@ -23,8 +27,17 @@ being too rigid about it.
 - One-off CLI scripts: create the first admin, import historical xlsx.
 - Apps Script source + setup walkthrough under `docs/apps-script/`.
 
+### Changed
+
+- Parts-request table layout: stacked submitted date/time and line/area,
+  fixed column widths so the table fits without horizontal scrolling,
+  taller rows with multi-line notes, shortened urgency badges
+  (Urgent / Not urgent / 2–3 weeks), and more space between status and
+  action buttons.
+
 ### Deferred
 
 - Parts-delivered / in-transit tracking. The submissions table already
-  has `status`, `po_number`, and `received_at`, but the UI is just a
-  "Coming soon" placeholder for now.
+  has `status`, `po_number`, and `received_at`, and requests now use
+  `ordered` in the request log, but the dedicated Delivered page is
+  still a "Coming soon" placeholder.

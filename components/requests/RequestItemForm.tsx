@@ -90,10 +90,15 @@ export function RequestItemForm({ action, initial, submitLabel, onSuccess }: Pro
           <select
             id="status"
             name="status"
-            defaultValue={initial?.status === "closed" ? "closed" : "open"}
+            defaultValue={
+              initial?.status === "closed" || initial?.status === "ordered"
+                ? initial.status
+                : "open"
+            }
             className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:border-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600/20"
           >
             <option value="open">Requested</option>
+            <option value="ordered">Ordered</option>
             <option value="closed">Complete</option>
           </select>
         </div>

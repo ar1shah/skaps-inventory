@@ -15,6 +15,30 @@ export type Release = {
 // Curated from the project's commit history. Newest first.
 export const releases: Release[] = [
   {
+    date: "2026-08-01",
+    title: "Ordered status & tighter request table",
+    summary:
+      "Parts requests can move through Requested → Ordered → Complete, and the request log fits on screen without sideways scrolling.",
+    items: [
+      {
+        tag: "New",
+        text: "Ordered filter tab and status badge on the parts-request log.",
+      },
+      {
+        tag: "New",
+        text: "Mark as ordered, then mark as complete once a part has been ordered.",
+      },
+      {
+        tag: "Improved",
+        text: "Request table stacks date/time and line/area so everything fits without horizontal scrolling.",
+      },
+      {
+        tag: "Improved",
+        text: "Shorter urgency badges and more room between status and action buttons.",
+      },
+    ],
+  },
+  {
     date: "2026-07-15",
     title: "Linked parts on the used log",
     summary:

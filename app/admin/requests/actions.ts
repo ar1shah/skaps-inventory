@@ -22,7 +22,7 @@ const RequestSubmissionInput = z.object({
   machine_area: optionalString(80),
   urgency: optionalString(80),
   notes: optionalString(2000),
-  status: z.enum(["open", "closed"]),
+  status: z.enum(["open", "ordered", "closed"]),
 });
 
 export interface RequestFormState {
@@ -62,6 +62,19 @@ export async function updateRequestSubmission(
 
   revalidateRequestPaths();
   return { ok: true };
+}
+
+export async function markRequestOrdered(id: string): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("submissions")
+    .update({ status: "ordered" })
+    .eq("id", id)
+    .eq("form_type", "request");
+  if (error) {
+    throw new Error(error.message);
+  }
+  revalidateRequestPaths();
 }
 
 export async function markRequestComplete(id: string): Promise<void> {

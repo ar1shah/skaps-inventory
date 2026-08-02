@@ -36,3 +36,11 @@ export function formatDateTime(date: Date | string | null | undefined): string {
     minute: "2-digit",
   });
 }
+
+/** Time only, e.g. "2:45 PM" — pairs with formatDate for stacked cells. */
+export function formatTime(date: Date | string | null | undefined): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
